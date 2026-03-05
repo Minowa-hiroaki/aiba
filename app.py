@@ -528,7 +528,7 @@ if 'uploaded_file_url' not in st.session_state:
 
 if not st.session_state.user_name:
     st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h1>🎧 AIBA Memorial</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🎧 愛波 Memorial</h1>", unsafe_allow_html=True)
     st.markdown("<p class='sub-text'>KOHEI AIBAを愛する仲間たちのための場所です。</p>", unsafe_allow_html=True)
     
     with st.form("login_form"):
@@ -541,7 +541,7 @@ if not st.session_state.user_name:
     st.stop()
 
 # --- 5. メインレイアウト ---
-st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🎧 AIBA Memorial</h3>", unsafe_allow_html=True)
+st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🎧 愛波 Memorial</h3>", unsafe_allow_html=True)
 st.markdown(f"<p style='text-align: center; color: #10b981; font-size: 0.9rem;'>User: {st.session_state.user_name}</p>", unsafe_allow_html=True)
 
 tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st.tabs(["Info", "Photo/Story", "Music", "Memory", "Live", "Message", "Fund"])
@@ -550,11 +550,9 @@ tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st
 with tab_info:
     st.header("Event Info")
     st.markdown("""
-    ### **AIBA Memorial Party - The Final Set**
-    * **Date:** 2026.03.20 (Fri) or 21 (Sat)
-    * **Place:** 渋谷 WOMB (調整中)
-    
-    収益はすべて「Aiba Family Fund」へ贈られます。
+    ### **愛波 Memorial Party - The Final Set**
+    * **Date:** TBA
+    * **Place:** TBA
     
     ---
     
@@ -598,6 +596,17 @@ with tab_info:
     みんなの思い出を応援してください。
     
     一緒にKOHEI AIBAの記憶を祝いましょう 🎧✨
+    
+    ---
+    
+    ### 💝 愛波 Family Fund について
+    
+    **Fund** タブから、KOHEI AIBAが愛した子供たちを支援する基金に寄付できます。
+    
+    このファンドは、KOHEI AIBAが愛し、大切にしていた子供たちの未来のために使われます。  
+    皆様の温かいご支援をお待ちしています。
+    
+    🔗 寄付はFundタブから
     """)
 
 # --- 5-2. Memory ---
@@ -1181,4 +1190,4 @@ with tab_fund:
     st.link_button("Donate to Aiba Family Fund", "https://congrant.com/project/89m98/14101", width='stretch')
 
 st.divider()
-st.caption("© 2026 AIBA Memorial Project Team")
+st.caption("© 2026 愛波 Memorial Project Team")
