@@ -1,0 +1,25 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Google Cloud credentials
+*.json
+
+# Large media files
+*.mov
+*.mp4
+*.avi
+*.jpeg
+*.jpg
+*.png
+
+# Environment
+.env
+.DS_Store
