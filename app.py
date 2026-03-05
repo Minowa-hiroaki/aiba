@@ -576,11 +576,12 @@ with tab_info:
     曲とエピソードを投稿して、みんなで共有しましょう。
     
     **🎬 Memory** - KOHEI AIBAの映像・音源を共有  
-    - **YouTube URL**: YouTube動画のリンクを投稿
-    - **Google Drive URL**: 大容量ファイル（1GB以上）はGoogle Driveで共有
+    - **YouTube URL** ⭐推奨: YouTube動画（限定公開OK）を埋め込み再生
+    - **Google Drive URL**: 大容量ファイルはリンクから視聴
     - **ファイルアップロード**: 小容量ファイル（200MB以下推奨）を直接アップロード
     
-    💡 **大容量ファイルの推奨方法**: Google Driveにアップロード → 共有リンクを取得 → URLを投稿
+    💡 **大容量動画の推奨方法**: YouTube（限定公開）にアップロード → URLを投稿
+    　（Streamlit上で直接再生できます）
     
     **📺 Live** - イベント当日のライブ配信  
     当日来られない方も、会場の様子をリアルタイムで視聴できます。
@@ -650,6 +651,7 @@ with tab_memory:
     
     elif upload_type == "Google Drive URL":
         st.info("💡 **大容量ファイル（1GB以上）はGoogle Driveをご利用ください**")
+        st.warning("⚠️ **注意**: 動画は埋め込みではなく、リンクからGoogle Driveで再生されます。埋め込み再生したい場合は、**YouTube（限定公開）**のご利用を推奨します。")
         with st.expander("📖 Google Driveでの共有方法"):
             st.markdown("""
             1. Google Driveにファイルをアップロード
@@ -657,6 +659,11 @@ with tab_memory:
             3. 「一般的なアクセス」を「リンクを知っている全員」に変更
             4. 「リンクをコピー」をクリック
             5. 下の入力欄にURLを貼り付け
+            
+            **または、YouTube（限定公開）を推奨**:
+            - YouTube Studioで「限定公開」としてアップロード
+            - URLをコピーして「YouTube URL」を選択して投稿
+            - Streamlit上で直接再生できます
             """)
         
         gdrive_url_mem = st.text_input(
@@ -667,7 +674,7 @@ with tab_memory:
         
         if gdrive_url_mem:
             st.success("✅ Google DriveのURLを受け付けました")
-            st.caption("投稿後、このリンクから動画を視聴できます")
+            st.caption("投稿後、リンクボタンからGoogle Driveで視聴できます")
     
     else:  # ファイルをアップロード
         st.warning("⚠️ ファイルアップロードは200MB以下のファイル推奨です。大容量ファイルはGoogle Driveをご利用ください。")
@@ -791,15 +798,10 @@ with tab_memory:
                     # Google Drive動画を表示
                     elif pd.notna(gdrive_url) and str(gdrive_url).strip() != '':
                         gdrive_url_str = str(gdrive_url)
-                        embed_url = convert_gdrive_to_embed(gdrive_url_str)
                         
-                        if embed_url:
-                            # Google Drive埋め込みプレーヤーを表示
-                            st.components.v1.iframe(embed_url, height=480)
-                            st.link_button("🔗 Google Driveで開く", gdrive_url_str)
-                        else:
-                            # 埋め込みできない場合はリンクのみ
-                            st.link_button("📥 Google Driveで視聴", gdrive_url_str)
+                        # 大容量ファイルは埋め込みではなく、リンクボタンで対応
+                        st.info("📺 Google Driveで動画を再生")
+                        st.link_button("▶️ Google Driveで視聴する", gdrive_url_str, use_container_width=True)
                     
                     # アップロードされたファイルを表示
                     elif pd.notna(file_url) and str(file_url).strip() != '':
