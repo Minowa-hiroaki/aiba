@@ -9,6 +9,8 @@ from PIL import Image
 import io
 import requests
 import urllib.parse
+import streamlit.components.v1 as components
+import json
 
 # --- 1. ページ基本設定 ---
 st.set_page_config(
@@ -165,6 +167,177 @@ def clean_youtube_url(url):
     
     return ""
 
+def generate_upload_signed_url(filename, content_type):
+    """GCSへの直接アップロード用のSigned URLを生成"""
+    if not USE_GCS:
+        return None, None
+    
+    try:
+        # ファイル拡張子を取得
+        file_extension = filename.split('.')[-1] if '.' in filename else 'tmp'
+        # ユニークなファイル名を生成
+        unique_filename = f"memory/{uuid.uuid4()}.{file_extension}"
+        
+        # Blobオブジェクトを作成
+        blob = gcs_bucket.blob(unique_filename)
+        
+        # Signed URLを生成（30分有効、PUTメソッド）
+        upload_url = blob.generate_signed_url(
+            version="v4",
+            expiration=timedelta(minutes=30),
+            method="PUT",
+            content_type=content_type
+        )
+        
+        # 公開URLを返す
+        public_url = blob.public_url
+        
+        return upload_url, public_url
+    except Exception as e:
+        st.error(f"Signed URL生成エラー: {str(e)}")
+        return None, None
+
+def render_large_file_uploader(key="large_uploader"):
+    """大容量ファイル用のカスタムアップローダー（Signed URL方式）"""
+    
+    html_code = f"""
+    <div style="padding: 20px; background-color: #0f172a; border: 2px dashed #334155; border-radius: 10px; text-align: center;">
+        <input type="file" id="fileInput_{key}" accept=".mp4,.mov,.avi,.mp3,.wav,.m4a" 
+               style="display: none;" onchange="handleFileSelect_{key}(event)">
+        <button onclick="document.getElementById('fileInput_{key}').click()" 
+                style="background-color: #10b981; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600;">
+            📁 ファイルを選択
+        </button>
+        <div id="fileInfo_{key}" style="margin-top: 15px; color: #94a3b8;"></div>
+        <div id="uploadProgress_{key}" style="margin-top: 15px; display: none;">
+            <div style="background-color: #1e293b; border-radius: 10px; height: 30px; overflow: hidden;">
+                <div id="progressBar_{key}" style="background-color: #10b981; height: 100%; width: 0%; transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;"></div>
+            </div>
+            <p id="uploadStatus_{key}" style="margin-top: 10px; color: #10b981; font-weight: 600;"></p>
+        </div>
+    </div>
+    
+    <script>
+    let selectedFile_{key} = null;
+    let uploadedUrl_{key} = null;
+    
+    function handleFileSelect_{key}(event) {{
+        selectedFile_{key} = event.target.files[0];
+        if (selectedFile_{key}) {{
+            const sizeMB = (selectedFile_{key}.size / 1024 / 1024).toFixed(2);
+            document.getElementById('fileInfo_{key}').innerHTML = 
+                `<p style="color: #fbbf24; font-weight: 600;">✅ ${{selectedFile_{key}.name}} (${{sizeMB}} MB)</p>
+                 <button onclick="startUpload_{key}()" style="background-color: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-weight: 600;">🚀 アップロード開始</button>`;
+        }}
+    }}
+    
+    async function startUpload_{key}() {{
+        if (!selectedFile_{key}) {{
+            alert('ファイルを選択してください');
+            return;
+        }}
+        
+        try {{
+            // Streamlitに Signed URL をリクエスト
+            const fileExtension = selectedFile_{key}.name.split('.').pop();
+            const mimeTypes = {{
+                'mp4': 'video/mp4',
+                'mov': 'video/quicktime',
+                'avi': 'video/x-msvideo',
+                'mp3': 'audio/mpeg',
+                'wav': 'audio/wav',
+                'm4a': 'audio/mp4'
+            }};
+            const contentType = mimeTypes[fileExtension.toLowerCase()] || 'application/octet-stream';
+            
+            // Streamlitに情報を送信
+            window.parent.postMessage({{
+                type: 'streamlit:setComponentValue',
+                key: '{key}',
+                value: {{
+                    action: 'request_signed_url',
+                    filename: selectedFile_{key}.name,
+                    contentType: contentType,
+                    size: selectedFile_{key}.size
+                }}
+            }}, '*');
+            
+            // 進捗表示
+            document.getElementById('uploadProgress_{key}').style.display = 'block';
+            document.getElementById('uploadStatus_{key}').textContent = 'Signed URLを取得中...';
+            
+        }} catch (error) {{
+            document.getElementById('uploadStatus_{key}').textContent = 'エラー: ' + error.message;
+            document.getElementById('uploadStatus_{key}').style.color = '#ef4444';
+        }}
+    }}
+    
+    // Signed URLを受け取ってアップロード実行
+    window.uploadWithSignedUrl_{key} = async function(signedUrl, publicUrl) {{
+        try {{
+            const xhr = new XMLHttpRequest();
+            
+            xhr.upload.addEventListener('progress', (e) => {{
+                if (e.lengthComputable) {{
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById('progressBar_{key}').style.width = percentComplete + '%';
+                    document.getElementById('progressBar_{key}').textContent = percentComplete + '%';
+                    document.getElementById('uploadStatus_{key}').textContent = `アップロード中... ${{percentComplete}}%`;
+                }}
+            }});
+            
+            xhr.addEventListener('load', () => {{
+                if (xhr.status === 200) {{
+                    document.getElementById('uploadStatus_{key}').textContent = '✅ アップロード完了！';
+                    uploadedUrl_{key} = publicUrl;
+                    
+                    // Streamlitに完了を通知
+                    window.parent.postMessage({{
+                        type: 'streamlit:setComponentValue',
+                        key: '{key}',
+                        value: {{
+                            action: 'upload_complete',
+                            url: publicUrl,
+                            filename: selectedFile_{key}.name
+                        }}
+                    }}, '*');
+                }} else {{
+                    throw new Error('アップロード失敗: ' + xhr.status);
+                }}
+            }});
+            
+            xhr.addEventListener('error', () => {{
+                throw new Error('ネットワークエラー');
+            }});
+            
+            const fileExtension = selectedFile_{key}.name.split('.').pop();
+            const mimeTypes = {{
+                'mp4': 'video/mp4',
+                'mov': 'video/quicktime',
+                'avi': 'video/x-msvideo',
+                'mp3': 'audio/mpeg',
+                'wav': 'audio/wav',
+                'm4a': 'audio/mp4'
+            }};
+            const contentType = mimeTypes[fileExtension.toLowerCase()] || 'application/octet-stream';
+            
+            xhr.open('PUT', signedUrl, true);
+            xhr.setRequestHeader('Content-Type', contentType);
+            xhr.send(selectedFile_{key});
+            
+        }} catch (error) {{
+            document.getElementById('uploadStatus_{key}').textContent = 'エラー: ' + error.message;
+            document.getElementById('uploadStatus_{key}').style.color = '#ef4444';
+        }}
+    }};
+    </script>
+    """
+    
+    # HTMLコンポーネントを表示
+    component_value = components.html(html_code, height=250)
+    
+    return component_value
+
 # --- 3. デザインCSS ---
 st.markdown("""
     <style>
@@ -286,6 +459,8 @@ if 'music_form_key' not in st.session_state:
     st.session_state.music_form_key = 0
 if 'message_form_key' not in st.session_state:
     st.session_state.message_form_key = 0
+if 'uploaded_file_url' not in st.session_state:
+    st.session_state.uploaded_file_url = {}
 
 if not st.session_state.user_name:
     st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
@@ -404,68 +579,55 @@ with tab_memory:
             except:
                 st.error("有効なYouTube URLを入力してください")
     else:
-        uploaded_mem_file = st.file_uploader(
-            "ファイルを選択（動画・音声）",
-            type=['mp4', 'mov', 'avi', 'mp3', 'wav', 'm4a'],
-            key=f"memory_uploader_{st.session_state.memory_uploader_key}"
-        )
-        if uploaded_mem_file is not None:
-            st.info(f"📁 {uploaded_mem_file.name} ({uploaded_mem_file.size / 1024 / 1024:.2f} MB)")
-            if USE_GCS:
-                st.success("✅ アップロード準備完了")
-            else:
-                st.warning("⚠️ GCS未設定。ファイルは保存されません。")
+        # ファイルサイズによってアップロード方法を切り替え
+        st.info("💡 大容量ファイル（200MB以上）も対応しています")
+        
+        # カスタムアップローダーを使用
+        if USE_GCS:
+            uploader_result = render_large_file_uploader(key=f"large_uploader_{st.session_state.memory_uploader_key}")
+            
+            # Signed URLリクエストを処理
+            if uploader_result and isinstance(uploader_result, dict):
+                if uploader_result.get('action') == 'request_signed_url':
+                    filename = uploader_result.get('filename', '')
+                    content_type = uploader_result.get('contentType', 'application/octet-stream')
+                    
+                    # Signed URLを生成
+                    signed_url, public_url = generate_upload_signed_url(filename, content_type)
+                    
+                    if signed_url and public_url:
+                        # JavaScriptにSigned URLを渡す
+                        st.markdown(f"""
+                        <script>
+                        if (window.uploadWithSignedUrl_{st.session_state.memory_uploader_key}) {{
+                            window.uploadWithSignedUrl_{st.session_state.memory_uploader_key}('{signed_url}', '{public_url}');
+                        }}
+                        </script>
+                        """, unsafe_allow_html=True)
+                
+                elif uploader_result.get('action') == 'upload_complete':
+                    file_url_mem = uploader_result.get('url', '')
+                    st.success(f"✅ アップロード完了: {uploader_result.get('filename', '')}")
+                    # セッションステートに保存
+                    if 'uploaded_file_url' not in st.session_state:
+                        st.session_state.uploaded_file_url = {}
+                    st.session_state.uploaded_file_url[st.session_state.memory_uploader_key] = file_url_mem
+        else:
+            st.warning("⚠️ GCS未設定。ファイルアップロード機能は利用できません。")
     
     if st.button("投稿する", key="post_memory", type="primary"):
         if mem_title and mem_description:
             # 変数の初期化
             file_url_mem = ""
             
-            # ファイルアップロード処理
-            if upload_type == "ファイルをアップロード" and uploaded_mem_file is not None and USE_GCS:
-                st.info(f"🔄 アップロード開始: {uploaded_mem_file.name}")
-                with st.spinner("ファイルをアップロード中..."):
-                    try:
-                        # ファイルをGCSにアップロード
-                        file_extension = uploaded_mem_file.name.split('.')[-1]
-                        unique_filename = f"memory/{uuid.uuid4()}.{file_extension}"
-                        blob = gcs_bucket.blob(unique_filename)
-                        uploaded_mem_file.seek(0)
-                        
-                        # Content-Typeを明示的に設定
-                        content_type = uploaded_mem_file.type
-                        if not content_type:
-                            # MIMEタイプが設定されていない場合、拡張子から判断
-                            mime_types = {
-                                'mp4': 'video/mp4',
-                                'mov': 'video/quicktime',
-                                'avi': 'video/x-msvideo',
-                                'mp3': 'audio/mpeg',
-                                'wav': 'audio/wav',
-                                'm4a': 'audio/mp4'
-                            }
-                            content_type = mime_types.get(file_extension.lower(), 'application/octet-stream')
-                        
-                        blob.upload_from_file(uploaded_mem_file, content_type=content_type)
-                        # バケットレベルで公開されているため、make_public()は不要
-                        
-                        # Cache-Controlヘッダーを設定
-                        blob.cache_control = 'public, max-age=31536000'
-                        blob.patch()
-                        
-                        # 公開URLを取得
-                        file_url_mem = blob.public_url
-                        st.success("ファイルのアップロードが完了しました！")
-                        st.info(f"📎 保存URL: {file_url_mem}")
-                    except Exception as e:
-                        st.error(f"アップロードエラー: {str(e)}")
-                        import traceback
-                        st.error(f"詳細: {traceback.format_exc()}")
-                        file_url_mem = ""  # エラー時は空文字列に設定
-            elif upload_type == "ファイルをアップロード" and uploaded_mem_file is not None and not USE_GCS:
-                st.error("⚠️ GCS未設定のため、ファイルはアップロードされません")
-            elif upload_type == "ファイルをアップロード" and uploaded_mem_file is None:
-                st.error("⚠️ ファイルが選択されていません")
+            # セッションステートからアップロード済みURLを取得
+            if upload_type == "ファイルをアップロード" and 'uploaded_file_url' in st.session_state:
+                file_url_mem = st.session_state.uploaded_file_url.get(st.session_state.memory_uploader_key, "")
+                
+                # ファイルがアップロードされていない場合の警告
+                if not file_url_mem and USE_GCS:
+                    st.error("⚠️ ファイルをアップロードしてから投稿してください")
+                    st.stop()
             
             # YouTube URLのクリーンアップ
             if youtube_url_mem:
