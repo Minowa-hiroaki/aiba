@@ -167,6 +167,34 @@ def clean_youtube_url(url):
     
     return ""
 
+def convert_gdrive_to_embed(url):
+    """Google Drive URLを埋め込み用URLに変換"""
+    if not url or pd.isna(url):
+        return None
+    
+    url = str(url).strip()
+    
+    # Google DriveのURLかチェック
+    if 'drive.google.com' not in url:
+        return None
+    
+    # ファイルIDを抽出
+    import re
+    
+    # https://drive.google.com/file/d/FILE_ID/view?usp=sharing 形式
+    match = re.search(r'/file/d/([a-zA-Z0-9_-]+)', url)
+    if match:
+        file_id = match.group(1)
+        return f"https://drive.google.com/file/d/{file_id}/preview"
+    
+    # https://drive.google.com/open?id=FILE_ID 形式
+    match = re.search(r'[?&]id=([a-zA-Z0-9_-]+)', url)
+    if match:
+        file_id = match.group(1)
+        return f"https://drive.google.com/file/d/{file_id}/preview"
+    
+    return None
+
 def generate_upload_signed_url(filename, content_type):
     """GCSへの直接アップロード用のSigned URLを生成"""
     if not USE_GCS:
@@ -548,7 +576,11 @@ with tab_info:
     曲とエピソードを投稿して、みんなで共有しましょう。
     
     **🎬 Memory** - KOHEI AIBAの映像・音源を共有  
-    YouTubeリンクやファイルをアップロードして、彼の記憶を残しましょう。
+    - **YouTube URL**: YouTube動画のリンクを投稿
+    - **Google Drive URL**: 大容量ファイル（1GB以上）はGoogle Driveで共有
+    - **ファイルアップロード**: 小容量ファイル（200MB以下推奨）を直接アップロード
+    
+    💡 **大容量ファイルの推奨方法**: Google Driveにアップロード → 共有リンクを取得 → URLを投稿
     
     **📺 Live** - イベント当日のライブ配信  
     当日来られない方も、会場の様子をリアルタイムで視聴できます。
@@ -590,20 +622,21 @@ with tab_memory:
         key=f"memory_description_{st.session_state.memory_uploader_key}"
     )
     
-    # YouTube URLまたはファイルアップロード
+    # YouTube/Google Drive URLまたはファイルアップロード
     st.write("**アップロード方法を選択**")
     upload_type = st.radio(
         "アップロード方法", 
-        ["YouTube URLを入力", "ファイルをアップロード"], 
+        ["YouTube URL", "Google Drive URL", "ファイルをアップロード (小容量のみ)"], 
         horizontal=True, 
         label_visibility="collapsed",
         key=f"memory_upload_type_{st.session_state.memory_uploader_key}"
     )
     
     youtube_url_mem = ""
+    gdrive_url_mem = ""
     file_url_mem = ""
     
-    if upload_type == "YouTube URLを入力":
+    if upload_type == "YouTube URL":
         youtube_url_mem = st.text_input(
             "YouTube URL",
             placeholder="https://www.youtube.com/watch?v=...",
@@ -614,80 +647,77 @@ with tab_memory:
                 st.video(youtube_url_mem)
             except:
                 st.error("有効なYouTube URLを入力してください")
-    else:
-        # ファイルサイズによってアップロード方法を切り替え
-        st.info("💡 大容量ファイル（200MB以上）も対応しています")
+    
+    elif upload_type == "Google Drive URL":
+        st.info("💡 **大容量ファイル（1GB以上）はGoogle Driveをご利用ください**")
+        with st.expander("📖 Google Driveでの共有方法"):
+            st.markdown("""
+            1. Google Driveにファイルをアップロード
+            2. ファイルを右クリック → 「共有」
+            3. 「一般的なアクセス」を「リンクを知っている全員」に変更
+            4. 「リンクをコピー」をクリック
+            5. 下の入力欄にURLを貼り付け
+            """)
         
-        # カスタムアップローダーを使用
-        if USE_GCS:
-            uploader_key = f"large_uploader_{st.session_state.memory_uploader_key}"
+        gdrive_url_mem = st.text_input(
+            "Google Drive 共有リンク",
+            placeholder="https://drive.google.com/file/d/...",
+            key=f"memory_gdrive_{st.session_state.memory_uploader_key}"
+        )
+        
+        if gdrive_url_mem:
+            st.success("✅ Google DriveのURLを受け付けました")
+            st.caption("投稿後、このリンクから動画を視聴できます")
+    
+    else:  # ファイルをアップロード
+        st.warning("⚠️ ファイルアップロードは200MB以下のファイル推奨です。大容量ファイルはGoogle Driveをご利用ください。")
+        
+        # 標準ファイルアップローダー
+        uploaded_file_mem = st.file_uploader(
+            "ファイルを選択",
+            type=['mp4', 'mov', 'avi', 'mp3', 'wav', 'm4a'],
+            key=f"memory_file_{st.session_state.memory_uploader_key}"
+        )
+        
+        if uploaded_file_mem:
+            file_size_mb = uploaded_file_mem.size / 1024 / 1024
+            st.info(f"📁 {uploaded_file_mem.name} ({file_size_mb:.2f} MB)")
             
-            # コンポーネントから返された値を処理
-            uploader_result = render_large_file_uploader(key=uploader_key)
-            
-            # 文字列として返ってくる場合があるのでパース
-            if uploader_result and isinstance(uploader_result, str):
-                try:
-                    uploader_result = json.loads(uploader_result)
-                except:
-                    pass
-            
-            # Signed URLリクエストを処理
-            if uploader_result and isinstance(uploader_result, dict):
-                action = uploader_result.get('action')
-                
-                if action == 'request_signed_url':
-                    filename = uploader_result.get('filename', '')
-                    content_type = uploader_result.get('contentType', 'application/octet-stream')
-                    
-                    # Signed URLを生成
-                    signed_url, public_url = generate_upload_signed_url(filename, content_type)
-                    
-                    if signed_url and public_url:
-                        # Signed URL付きでコンポーネントを再レンダリング
-                        st.info(f"🔗 Signed URL生成完了: {filename}")
-                        render_large_file_uploader(
-                            key=uploader_key,
-                            signed_url=signed_url,
-                            public_url=public_url
-                        )
-                        st.rerun()
-                    else:
-                        st.error("Signed URLの生成に失敗しました")
-                
-                elif action == 'upload_complete':
-                    file_url_mem = uploader_result.get('url', '')
-                    filename = uploader_result.get('filename', '')
-                    st.success(f"✅ アップロード完了: {filename}")
-                    # セッションステートに保存
-                    if 'uploaded_file_url' not in st.session_state:
-                        st.session_state.uploaded_file_url = {}
-                    st.session_state.uploaded_file_url[st.session_state.memory_uploader_key] = file_url_mem
-        else:
-            st.warning("⚠️ GCS未設定。ファイルアップロード機能は利用できません。")
+            if file_size_mb > 200:
+                st.error("⚠️ 200MBを超えるファイルはGoogle Driveのご利用を推奨します")
     
     if st.button("投稿する", key="post_memory", type="primary"):
         if mem_title and mem_description:
-            # 変数の初期化
-            file_url_mem = ""
-            
-            # セッションステートからアップロード済みURLを取得
-            if upload_type == "ファイルをアップロード" and 'uploaded_file_url' in st.session_state:
-                file_url_mem = st.session_state.uploaded_file_url.get(st.session_state.memory_uploader_key, "")
-                
-                # ファイルがアップロードされていない場合の警告
-                if not file_url_mem and USE_GCS:
-                    st.error("⚠️ ファイルをアップロードしてから投稿してください")
+            # YouTube/Google Drive URLを確認
+            if upload_type == "YouTube URL" and not youtube_url_mem:
+                st.error("⚠️ YouTube URLを入力してください")
+                st.stop()
+            elif upload_type == "Google Drive URL" and not gdrive_url_mem:
+                st.error("⚠️ Google Drive URLを入力してください")
+                st.stop()
+            elif upload_type == "ファイルをアップロード (小容量のみ)":
+                # ファイルアップロード処理
+                if 'uploaded_file_mem' in locals() and uploaded_file_mem and USE_GCS:
+                    with st.spinner("ファイルをアップロード中..."):
+                        # ファイル拡張子を取得
+                        file_extension = uploaded_file_mem.name.split('.')[-1]
+                        unique_filename = f"memory/{uuid.uuid4()}.{file_extension}"
+                        
+                        # GCSにアップロード
+                        blob = gcs_bucket.blob(unique_filename)
+                        blob.upload_from_file(uploaded_file_mem, content_type=uploaded_file_mem.type)
+                        file_url_mem = blob.public_url
+                        st.success("✅ アップロード完了")
+                elif not USE_GCS:
+                    st.error("⚠️ ファイルアップロード機能が利用できません")
+                    st.stop()
+                elif 'uploaded_file_mem' not in locals() or not uploaded_file_mem:
+                    st.error("⚠️ ファイルを選択してください")
                     st.stop()
             
-            # YouTube URLのクリーンアップ
-            if youtube_url_mem:
-                youtube_url_mem = clean_youtube_url(youtube_url_mem)
-            
-            # デバッグ情報
-            with st.expander("🔍 保存データの確認"):
-                st.write(f"YouTube URL: {youtube_url_mem if youtube_url_mem else '(なし)'}")
-                st.write(f"File URL: {file_url_mem if file_url_mem else '(なし)'}")
+            # URLのクリーンアップ
+            youtube_url_cleaned = clean_youtube_url(youtube_url_mem) if youtube_url_mem else ""
+            gdrive_url_cleaned = gdrive_url_mem.strip() if gdrive_url_mem else ""
             
             # データ保存
             new_row = pd.DataFrame([{
@@ -695,7 +725,8 @@ with tab_memory:
                 "category": category,
                 "title": mem_title,
                 "description": mem_description,
-                "youtube_url": youtube_url_mem if youtube_url_mem else "",
+                "youtube_url": youtube_url_cleaned,
+                "gdrive_url": gdrive_url_cleaned,
                 "file_url": file_url_mem if file_url_mem else "",
                 "likes": 0
             }])
@@ -704,8 +735,6 @@ with tab_memory:
             
             if save_data("Memory", updated_df):
                 st.success("投稿が完了しました！")
-                if file_url_mem:
-                    st.info(f"✅ 動画URL: {file_url_mem}")
                 st.session_state.memory_uploader_key += 1
                 st.cache_data.clear()
                 st.rerun()
@@ -749,13 +778,30 @@ with tab_memory:
                     # 説明
                     st.write(row.get('description', ''))
                     
-                    # YouTube動画またはファイル表示
+                    # YouTube動画、Google Drive、またはファイル表示
                     youtube_url = row.get('youtube_url', '')
+                    gdrive_url = row.get('gdrive_url', '')
                     # file_url と file_uri の両方に対応
                     file_url = row.get('file_url', '') or row.get('file_uri', '')
                     
+                    # YouTube動画を優先表示
                     if pd.notna(youtube_url) and str(youtube_url).strip() != '':
                         st.video(str(youtube_url))
+                    
+                    # Google Drive動画を表示
+                    elif pd.notna(gdrive_url) and str(gdrive_url).strip() != '':
+                        gdrive_url_str = str(gdrive_url)
+                        embed_url = convert_gdrive_to_embed(gdrive_url_str)
+                        
+                        if embed_url:
+                            # Google Drive埋め込みプレーヤーを表示
+                            st.components.v1.iframe(embed_url, height=480)
+                            st.link_button("🔗 Google Driveで開く", gdrive_url_str)
+                        else:
+                            # 埋め込みできない場合はリンクのみ
+                            st.link_button("📥 Google Driveで視聴", gdrive_url_str)
+                    
+                    # アップロードされたファイルを表示
                     elif pd.notna(file_url) and str(file_url).strip() != '':
                         # ファイルタイプで表示方法を変える
                         file_url_str = str(file_url)
