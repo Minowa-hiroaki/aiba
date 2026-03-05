@@ -197,8 +197,12 @@ def generate_upload_signed_url(filename, content_type):
         st.error(f"Signed URL生成エラー: {str(e)}")
         return None, None
 
-def render_large_file_uploader(key="large_uploader"):
+def render_large_file_uploader(key="large_uploader", signed_url=None, public_url=None):
     """大容量ファイル用のカスタムアップローダー（Signed URL方式）"""
+    
+    # Signed URLが渡されている場合、それを埋め込む
+    signed_url_js = f"'{signed_url}'" if signed_url else 'null'
+    public_url_js = f"'{public_url}'" if public_url else 'null'
     
     html_code = f"""
     <div style="padding: 20px; background-color: #0f172a; border: 2px dashed #334155; border-radius: 10px; text-align: center;">
@@ -218,27 +222,49 @@ def render_large_file_uploader(key="large_uploader"):
     </div>
     
     <script>
-    let selectedFile_{key} = null;
-    let uploadedUrl_{key} = null;
-    
-    function handleFileSelect_{key}(event) {{
-        selectedFile_{key} = event.target.files[0];
-        if (selectedFile_{key}) {{
-            const sizeMB = (selectedFile_{key}.size / 1024 / 1024).toFixed(2);
-            document.getElementById('fileInfo_{key}').innerHTML = 
-                `<p style="color: #fbbf24; font-weight: 600;">✅ ${{selectedFile_{key}.name}} (${{sizeMB}} MB)</p>
-                 <button onclick="startUpload_{key}()" style="background-color: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-weight: 600;">🚀 アップロード開始</button>`;
-        }}
-    }}
-    
-    async function startUpload_{key}() {{
-        if (!selectedFile_{key}) {{
-            alert('ファイルを選択してください');
-            return;
+    (function() {{
+        let selectedFile_{key} = null;
+        const SIGNED_URL = {signed_url_js};
+        const PUBLIC_URL = {public_url_js};
+        
+        // Signed URLが既にある場合、自動的にアップロード開始
+        if (SIGNED_URL && PUBLIC_URL) {{
+            // ローカルストレージからファイル情報を取得
+            const fileInfo = localStorage.getItem('pending_upload_{key}');
+            if (fileInfo) {{
+                document.getElementById('uploadProgress_{key}').style.display = 'block';
+                document.getElementById('uploadStatus_{key}').textContent = 'アップロード準備中...';
+                setTimeout(() => {{
+                    restoreAndUpload_{key}(SIGNED_URL, PUBLIC_URL);
+                }}, 100);
+            }}
         }}
         
-        try {{
-            // Streamlitに Signed URL をリクエスト
+        window.handleFileSelect_{key} = function(event) {{
+            selectedFile_{key} = event.target.files[0];
+            if (selectedFile_{key}) {{
+                const sizeMB = (selectedFile_{key}.size / 1024 / 1024).toFixed(2);
+                document.getElementById('fileInfo_{key}').innerHTML = 
+                    `<p style="color: #fbbf24; font-weight: 600;">✅ ${{selectedFile_{key}.name}} (${{sizeMB}} MB)</p>
+                     <button onclick="startUpload_{key}()" style="background-color: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; margin-top: 10px; cursor: pointer; font-weight: 600;">🚀 アップロード開始</button>`;
+            }}
+        }};
+        
+        window.startUpload_{key} = function() {{
+            if (!selectedFile_{key}) {{
+                alert('ファイルを選択してください');
+                return;
+            }}
+            
+            // ファイル情報をローカルストレージに保存
+            const fileInfo = {{
+                name: selectedFile_{key}.name,
+                size: selectedFile_{key}.size,
+                type: selectedFile_{key}.type
+            }};
+            localStorage.setItem('pending_upload_{key}', JSON.stringify(fileInfo));
+            
+            // Streamlitに情報を送信（ページリロード用）
             const fileExtension = selectedFile_{key}.name.split('.').pop();
             const mimeTypes = {{
                 'mp4': 'video/mp4',
@@ -250,31 +276,41 @@ def render_large_file_uploader(key="large_uploader"):
             }};
             const contentType = mimeTypes[fileExtension.toLowerCase()] || 'application/octet-stream';
             
-            // Streamlitに情報を送信
             window.parent.postMessage({{
                 type: 'streamlit:setComponentValue',
                 key: '{key}',
-                value: {{
+                value: JSON.stringify({{
                     action: 'request_signed_url',
                     filename: selectedFile_{key}.name,
                     contentType: contentType,
                     size: selectedFile_{key}.size
-                }}
+                }})
             }}, '*');
             
-            // 進捗表示
             document.getElementById('uploadProgress_{key}').style.display = 'block';
             document.getElementById('uploadStatus_{key}').textContent = 'Signed URLを取得中...';
+        }};
+        
+        function restoreAndUpload_{key}(signedUrl, publicUrl) {{
+            const fileInfo = JSON.parse(localStorage.getItem('pending_upload_{key}'));
+            if (!fileInfo) return;
             
-        }} catch (error) {{
-            document.getElementById('uploadStatus_{key}').textContent = 'エラー: ' + error.message;
-            document.getElementById('uploadStatus_{key}').style.color = '#ef4444';
+            // ファイル選択ダイアログを再度開く
+            const input = document.getElementById('fileInput_{key}');
+            input.onchange = function(e) {{
+                const file = e.target.files[0];
+                if (file && file.name === fileInfo.name) {{
+                    uploadFile_{key}(file, signedUrl, publicUrl);
+                }} else {{
+                    document.getElementById('uploadStatus_{key}').textContent = '❌ ファイルが一致しません';
+                    document.getElementById('uploadStatus_{key}').style.color = '#ef4444';
+                    localStorage.removeItem('pending_upload_{key}');
+                }}
+            }};
+            input.click();
         }}
-    }}
-    
-    // Signed URLを受け取ってアップロード実行
-    window.uploadWithSignedUrl_{key} = async function(signedUrl, publicUrl) {{
-        try {{
+        
+        function uploadFile_{key}(file, signedUrl, publicUrl) {{
             const xhr = new XMLHttpRequest();
             
             xhr.upload.addEventListener('progress', (e) => {{
@@ -289,28 +325,32 @@ def render_large_file_uploader(key="large_uploader"):
             xhr.addEventListener('load', () => {{
                 if (xhr.status === 200) {{
                     document.getElementById('uploadStatus_{key}').textContent = '✅ アップロード完了！';
-                    uploadedUrl_{key} = publicUrl;
+                    localStorage.removeItem('pending_upload_{key}');
                     
                     // Streamlitに完了を通知
                     window.parent.postMessage({{
                         type: 'streamlit:setComponentValue',
                         key: '{key}',
-                        value: {{
+                        value: JSON.stringify({{
                             action: 'upload_complete',
                             url: publicUrl,
-                            filename: selectedFile_{key}.name
-                        }}
+                            filename: file.name
+                        }})
                     }}, '*');
                 }} else {{
-                    throw new Error('アップロード失敗: ' + xhr.status);
+                    document.getElementById('uploadStatus_{key}').textContent = '❌ アップロード失敗: ' + xhr.status;
+                    document.getElementById('uploadStatus_{key}').style.color = '#ef4444';
+                    localStorage.removeItem('pending_upload_{key}');
                 }}
             }});
             
             xhr.addEventListener('error', () => {{
-                throw new Error('ネットワークエラー');
+                document.getElementById('uploadStatus_{key}').textContent = '❌ ネットワークエラー';
+                document.getElementById('uploadStatus_{key}').style.color = '#ef4444';
+                localStorage.removeItem('pending_upload_{key}');
             }});
             
-            const fileExtension = selectedFile_{key}.name.split('.').pop();
+            const fileExtension = file.name.split('.').pop();
             const mimeTypes = {{
                 'mp4': 'video/mp4',
                 'mov': 'video/quicktime',
@@ -323,13 +363,9 @@ def render_large_file_uploader(key="large_uploader"):
             
             xhr.open('PUT', signedUrl, true);
             xhr.setRequestHeader('Content-Type', contentType);
-            xhr.send(selectedFile_{key});
-            
-        }} catch (error) {{
-            document.getElementById('uploadStatus_{key}').textContent = 'エラー: ' + error.message;
-            document.getElementById('uploadStatus_{key}').style.color = '#ef4444';
+            xhr.send(file);
         }}
-    }};
+    }})();
     </script>
     """
     
@@ -584,11 +620,23 @@ with tab_memory:
         
         # カスタムアップローダーを使用
         if USE_GCS:
-            uploader_result = render_large_file_uploader(key=f"large_uploader_{st.session_state.memory_uploader_key}")
+            uploader_key = f"large_uploader_{st.session_state.memory_uploader_key}"
+            
+            # コンポーネントから返された値を処理
+            uploader_result = render_large_file_uploader(key=uploader_key)
+            
+            # 文字列として返ってくる場合があるのでパース
+            if uploader_result and isinstance(uploader_result, str):
+                try:
+                    uploader_result = json.loads(uploader_result)
+                except:
+                    pass
             
             # Signed URLリクエストを処理
             if uploader_result and isinstance(uploader_result, dict):
-                if uploader_result.get('action') == 'request_signed_url':
+                action = uploader_result.get('action')
+                
+                if action == 'request_signed_url':
                     filename = uploader_result.get('filename', '')
                     content_type = uploader_result.get('contentType', 'application/octet-stream')
                     
@@ -596,18 +644,21 @@ with tab_memory:
                     signed_url, public_url = generate_upload_signed_url(filename, content_type)
                     
                     if signed_url and public_url:
-                        # JavaScriptにSigned URLを渡す
-                        st.markdown(f"""
-                        <script>
-                        if (window.uploadWithSignedUrl_{st.session_state.memory_uploader_key}) {{
-                            window.uploadWithSignedUrl_{st.session_state.memory_uploader_key}('{signed_url}', '{public_url}');
-                        }}
-                        </script>
-                        """, unsafe_allow_html=True)
+                        # Signed URL付きでコンポーネントを再レンダリング
+                        st.info(f"🔗 Signed URL生成完了: {filename}")
+                        render_large_file_uploader(
+                            key=uploader_key,
+                            signed_url=signed_url,
+                            public_url=public_url
+                        )
+                        st.rerun()
+                    else:
+                        st.error("Signed URLの生成に失敗しました")
                 
-                elif uploader_result.get('action') == 'upload_complete':
+                elif action == 'upload_complete':
                     file_url_mem = uploader_result.get('url', '')
-                    st.success(f"✅ アップロード完了: {uploader_result.get('filename', '')}")
+                    filename = uploader_result.get('filename', '')
+                    st.success(f"✅ アップロード完了: {filename}")
                     # セッションステートに保存
                     if 'uploaded_file_url' not in st.session_state:
                         st.session_state.uploaded_file_url = {}
