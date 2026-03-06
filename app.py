@@ -74,10 +74,14 @@ def save_data(worksheet_name, data):
     """データを保存（Google Sheets または セッション状態へ）"""
     if USE_GSHEETS:
         try:
-            conn.update(worksheet=worksheet_name, data=data)
+            result = conn.update(worksheet=worksheet_name, data=data)
             return True
         except Exception as e:
-            st.error(f"Google Sheets保存エラー: {e}")
+            import traceback
+            error_details = traceback.format_exc()
+            st.error(f"Google Sheets保存エラー: {type(e).__name__}: {str(e)}")
+            with st.expander("詳細なエラー情報"):
+                st.code(error_details)
             return False
     else:
         # セッション状態に保存
@@ -598,7 +602,44 @@ with tab_info:
     一緒にKOHEI AIBAの記憶を祝いましょう 🎧✨
     
     ---
+    """)
     
+    # 投稿統計
+    st.header("📊 投稿統計")
+    
+    # 各カテゴリーのデータを取得
+    photo_df = get_data("Photo")
+    music_df = get_data("Music")
+    memory_df = get_data("Memory")
+    message_df = get_data("Message")
+    
+    # 統計情報を表示
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        photo_count = len(photo_df) if not photo_df.empty else 0
+        photo_likes = int(photo_df['likes'].sum()) if not photo_df.empty and 'likes' in photo_df.columns else 0
+        st.metric("📸 Photo/Story", f"{photo_count}件", f"👍 {photo_likes}")
+    
+    with col2:
+        music_count = len(music_df) if not music_df.empty else 0
+        music_likes = int(music_df['likes'].sum()) if not music_df.empty and 'likes' in music_df.columns else 0
+        st.metric("🎵 Music", f"{music_count}件", f"👍 {music_likes}")
+    
+    with col3:
+        memory_count = len(memory_df) if not memory_df.empty else 0
+        memory_likes = int(memory_df['likes'].sum()) if not memory_df.empty and 'likes' in memory_df.columns else 0
+        st.metric("🎬 Memory", f"{memory_count}件", f"👍 {memory_likes}")
+    
+    with col4:
+        message_count = len(message_df) if not message_df.empty else 0
+        st.metric("💌 Message", f"{message_count}件", "")
+    
+    st.caption("みんなの投稿で、KOHEI AIBAの記憶がより豊かになります ✨")
+    
+    st.divider()
+    
+    st.markdown("""
     ### 💝 愛波 Family Fund について
     
     **Fund** タブから、KOHEI AIBAが愛した子供たちを支援する基金に寄付できます。
@@ -607,6 +648,12 @@ with tab_info:
     皆様の温かいご支援をお待ちしています。
     
     🔗 寄付はFundタブから
+    
+    ---
+    
+    ### ⚠️ 投稿内容の修正・削除について
+    
+    投稿した内容の修正や削除を行いたい場合は、直接、運営サイドにご連絡ください。
     """)
 
 # --- 5-2. Memory ---
@@ -622,11 +669,7 @@ with tab_memory:
         key=f"memory_category_{st.session_state.memory_uploader_key}"
     )
     
-    # タイトルと説明
-    mem_title = st.text_input(
-        "タイトル",
-        key=f"memory_title_{st.session_state.memory_uploader_key}"
-    )
+    # 説明のみ
     mem_description = st.text_area(
         "説明・エピソード",
         key=f"memory_description_{st.session_state.memory_uploader_key}"
@@ -703,7 +746,7 @@ with tab_memory:
                 st.error("⚠️ 200MBを超えるファイルはGoogle Driveのご利用を推奨します")
     
     if st.button("投稿する", key="post_memory", type="primary"):
-        if mem_title and mem_description:
+        if mem_description:
             # YouTube/Google Drive URLを確認
             if upload_type == "YouTube URL" and not youtube_url_mem:
                 st.error("⚠️ YouTube URLを入力してください")
@@ -739,7 +782,6 @@ with tab_memory:
             new_row = pd.DataFrame([{
                 "user": st.session_state.user_name,
                 "category": category,
-                "title": mem_title,
                 "description": mem_description,
                 "youtube_url": youtube_url_cleaned,
                 "gdrive_url": gdrive_url_cleaned,
@@ -755,7 +797,7 @@ with tab_memory:
                 st.cache_data.clear()
                 st.rerun()
         else:
-            st.error("タイトルと説明を入力してください")
+            st.error("説明を入力してください")
     
     st.divider()
     
@@ -774,7 +816,7 @@ with tab_memory:
         if not filtered_df.empty:
             for idx, row in filtered_df.iloc[::-1].iterrows():
                 with st.container():
-                    # タイトルとカテゴリー
+                    # カテゴリーとLike
                     col_title, col_like = st.columns([5, 1])
                     with col_title:
                         category_icon = {
@@ -782,8 +824,8 @@ with tab_memory:
                             "音源": "🎵"
                         }
                         icon = category_icon.get(row.get('category', ''), '📁')
-                        st.markdown(f"### {icon} {row.get('title', '無題')}")
-                        st.caption(f"投稿者: {row.get('user', '不明')} | カテゴリー: {row.get('category', '不明')}")
+                        st.markdown(f"### {icon} {row.get('category', '不明')}")
+                        st.caption(f"投稿者: {row.get('user', '不明')}")
                     with col_like:
                         if st.button(f"👍 {row.get('likes', 0)}", key=f"like_memory_{idx}", type="secondary"):
                             memory_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
@@ -816,10 +858,6 @@ with tab_memory:
                     elif pd.notna(file_url) and str(file_url).strip() != '':
                         # ファイルタイプで表示方法を変える
                         file_url_str = str(file_url)
-                        
-                        # デバッグ情報を表示
-                        with st.expander("🔍 デバッグ情報（開発中）"):
-                            st.code(f"URL: {file_url_str}")
                         
                         try:
                             if any(ext in file_url_str.lower() for ext in ['.mp4', '.mov', '.avi']):
@@ -861,10 +899,10 @@ with tab_photo:
             from PIL import ImageOps
             preview_image = Image.open(uploaded_file)
             preview_image = ImageOps.exif_transpose(preview_image)
-            st.image(preview_image, caption="アップロード予定の写真", width='stretch')
+            st.image(preview_image, caption="アップロード予定の写真", use_container_width=True)
             uploaded_file.seek(0)  # ファイルポインタを先頭に戻す
         except:
-            st.image(uploaded_file, caption="アップロード予定の写真", width='stretch')
+            st.image(uploaded_file, caption="アップロード予定の写真", use_container_width=True)
             uploaded_file.seek(0)
         
         if USE_GCS:
@@ -926,7 +964,7 @@ with tab_photo:
                     image_url = row.get('image_url', '')
                     if image_url and image_url != '' and image_url != 'なし' and image_url != 'あり':
                         try:
-                            st.image(image_url, width='stretch')
+                            st.image(image_url, use_container_width=True)
                         except:
                             st.caption("📸 (画像の読み込みに失敗しました)")
                     elif image_url == 'あり':
@@ -1107,7 +1145,7 @@ with tab_music:
                 with col_left:
                     # ジャケット画像表示
                     if pd.notna(artwork_url) and str(artwork_url).strip() != '':
-                        st.image(str(artwork_url), width='stretch')
+                        st.image(str(artwork_url), use_container_width=True)
                     else:
                         st.markdown("### 🎵")
                         st.caption("(ジャケット画像なし)")
@@ -1124,7 +1162,9 @@ with tab_music:
 
 # --- 5-5. Live ---
 with tab_live:
-    st.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    st.header("🎧 Live DJ & Streaming")
+    st.info("当日はストリーミング配信を予定しています。DJ写真は準備中です。")
+    st.markdown("### 📺 配信はイベント当日にこちらで公開されます")
 
 # --- 5-6. Message ---
 with tab_message:
@@ -1187,7 +1227,17 @@ with tab_message:
 
 # --- 5-7. Fund ---
 with tab_fund:
-    st.link_button("Donate to Aiba Family Fund", "https://congrant.com/project/89m98/14101", width='stretch')
+    st.header("💝 Aiba Family Fund")
+    
+    # Google Driveの画像を表示
+    st.image("https://gofund.me/979e2078d", use_container_width=True)
+    
+    st.markdown("""  
+    KOHEI AIBAが愛し、大切にしていた子供たちの未来のために。  
+    皆様の温かいご支援をお待ちしています。
+    """)
+    
+    st.link_button("Donate to Aiba Family Fund", "https://congrant.com/project/89m98/14101")
 
 st.divider()
 st.caption("© 2026 愛波 Memorial Project Team")
