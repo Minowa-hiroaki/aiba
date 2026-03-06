@@ -1229,15 +1229,15 @@ with tab_message:
 with tab_fund:
     st.header("💝 Aiba Family Fund")
     
-    # Google Driveの画像を表示
-    st.image("https://gofund.me/979e2078d", use_container_width=True)
+    # Google Driveの画像を表示（ファイルID: 1JpfJnMS3G01bTbZEvsbIdW40uIP2Xknf）
+    st.image("https://lh3.googleusercontent.com/d/1JpfJnMS3G01bTbZEvsbIdW40uIP2Xknf", use_container_width=True)
     
     st.markdown("""  
     KOHEI AIBAが愛し、大切にしていた子供たちの未来のために。  
     皆様の温かいご支援をお待ちしています。
     """)
     
-    st.link_button("Donate to Aiba Family Fund", "https://congrant.com/project/89m98/14101")
+    st.link_button("Donate to Aiba Family Fund", "https://gofund.me/979e2078d")
 
 st.divider()
 st.caption("© 2026 愛波 Memorial Project Team")
