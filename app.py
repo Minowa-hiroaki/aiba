@@ -101,6 +101,15 @@ def upload_image_to_gcs(uploaded_file):
         from PIL import ImageOps
         image = ImageOps.exif_transpose(image)
         
+        # 画像をリサイズ（アップロード速度を改善）
+        # 最大サイズを1920x1080に制限（アスペクト比維持）
+        max_width = 1920
+        max_height = 1080
+        
+        # アスペクト比を維持しながらリサイズ
+        if image.width > max_width or image.height > max_height:
+            image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+        
         # RGBAモードの場合はRGBに変換（JPEG保存用）
         if image.mode in ('RGBA', 'P', 'LA'):
             rgb_image = Image.new('RGB', image.size, (255, 255, 255))
@@ -113,8 +122,8 @@ def upload_image_to_gcs(uploaded_file):
         
         # 修正した画像をバイトストリームに変換
         img_byte_arr = io.BytesIO()
-        # JPEGフォーマットで保存（EXIF情報なし、物理的に回転済み）
-        image.save(img_byte_arr, format='JPEG', quality=95, optimize=True)
+        # JPEGフォーマットで保存（品質85%に最適化 - 十分綺麗で高速）
+        image.save(img_byte_arr, format='JPEG', quality=85, optimize=True)
         img_byte_arr.seek(0)
         
         # ユニークなファイル名を生成
@@ -131,6 +140,7 @@ def upload_image_to_gcs(uploaded_file):
         st.warning(f"画像アップロード失敗: {str(e)}")
         return None
 
+@st.cache_data(ttl=3600)  # 1時間キャッシュ
 def get_album_artwork(song_name, artist_name):
     """iTunes Search APIを使ってアルバムアートワークを取得"""
     try:
@@ -139,7 +149,8 @@ def get_album_artwork(song_name, artist_name):
         encoded_term = urllib.parse.quote(search_term)
         api_url = f"https://itunes.apple.com/search?term={encoded_term}&entity=song&limit=1"
         
-        response = requests.get(api_url, timeout=5)
+        # タイムアウトを2秒に短縮して高速化
+        response = requests.get(api_url, timeout=2)
         if response.status_code == 200:
             data = response.json()
             if data.get('resultCount', 0) > 0:
