@@ -525,19 +525,12 @@ if 'user_name' not in st.session_state:
 if 'page_load_count' not in st.session_state:
     st.session_state.page_load_count = 0
 
-# アクティブタブの管理（タブ復元用）- URLパラメータから読み取る
-try:
-    url_tab = st.query_params.get("tab", "0")
-    initial_tab = int(url_tab) if url_tab else 0
-except Exception as e:
-    initial_tab = 0
-
+# アクティブタブの管理（タブ復元用）
 if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = initial_tab
+    st.session_state.active_tab = 0
+    print(f"[INIT] Initialized active_tab to 0")
 else:
-    # URLパラメータがあればそれを優先
-    if initial_tab > 0:
-        st.session_state.active_tab = initial_tab
+    print(f"[INIT] Active tab is: {st.session_state.active_tab}")
 
 # ファイルアップローダーのリセット用キー
 if 'photo_uploader_key' not in st.session_state:
@@ -712,74 +705,57 @@ tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st
 
 # タブ復元用のスクリプト（アップロード後）- st.tabs()の後に配置
 restore_tab = st.session_state.active_tab
-if restore_tab > 0:
-    tab_restore_html = f"""
-    <script>
-    (function() {{
-        console.log('[TAB] Starting tab restoration to index:', {restore_tab});
-        var targetIndex = {restore_tab};
-        var clickCount = 0;
-        var attempts = 0;
-        
-        function clickTargetTab() {{
-            attempts++;
-            try {{
-                // parent.documentから検索
-                var tabs = parent.document.querySelectorAll('button[role="tab"]');
-                
-                if (!tabs || tabs.length === 0) {{
-                    // 通常のdocumentから検索
-                    tabs = document.querySelectorAll('button[role="tab"]');
-                }}
-                
-                if (tabs && tabs.length > targetIndex) {{
-                    var tab = tabs[targetIndex];
-                    
-                    // 既に選択されているか確認
-                    if (tab.getAttribute('aria-selected') === 'true') {{
-                        if (clickCount === 0) {{
-                            console.log('[TAB] Tab', targetIndex, 'already selected');
-                        }}
-                        return true;
-                    }}
-                    
-                    // タブをクリック
-                    console.log('[TAB] Clicking tab', targetIndex, '(attempt', attempts, ')');
-                    clickCount++;
+
+# 常にJavaScriptを実行
+tab_restore_html = f"""
+<script>
+(function() {{
+    var targetIndex = {restore_tab};
+    console.log('[TAB] Target tab index:', targetIndex);
+    
+    if (targetIndex === 0) {{
+        console.log('[TAB] Info tab (0), no restoration needed');
+        return;
+    }}
+    
+    function clickTargetTab() {{
+        try {{
+            var tabs = parent.document.querySelectorAll('button[role="tab"]');
+            if (!tabs || tabs.length === 0) {{
+                tabs = document.querySelectorAll('button[role="tab"]');
+            }}
+            
+            if (tabs && tabs.length > targetIndex) {{
+                var tab = tabs[targetIndex];
+                if (tab.getAttribute('aria-selected') !== 'true') {{
+                    console.log('[TAB] Clicking tab', targetIndex);
                     tab.click();
                     tab.focus();
-                    return false;
-                }} else {{
-                    if (attempts === 1) {{
-                        console.log('[TAB] Tabs not found yet, found', tabs ? tabs.length : 0, 'tabs');
-                    }}
                 }}
-            }} catch(e) {{
-                console.error('[TAB] Error:', e);
+                return true;
             }}
-            return false;
+        }} catch(e) {{
+            console.error('[TAB] Error:', e);
         }}
-        
-        // 500ms後に開始（タブの完全な描画を待つ）
-        setTimeout(function() {{
-            // 即座に実行
-            clickTargetTab();
-            
-            // 10ms間隔で5秒間（500回）
-            var count = 0;
-            var interval = setInterval(function() {{
-                if (clickTargetTab() || count > 500) {{
-                    clearInterval(interval);
-                    console.log('[TAB] Completed. Total clicks:', clickCount, 'Total attempts:', attempts);
-                }}
-                count++;
-            }}, 10);
-        }}, 500);
-    }})();
-    </script>
-    """
-    components.html(tab_restore_html, height=0)
-    st.session_state.active_tab = 0
+        return false;
+    }}
+    
+    // 即座に実行
+    clickTargetTab();
+    
+    // 10ms間隔でリトライ
+    var count = 0;
+    var interval = setInterval(function() {{
+        if (clickTargetTab() || count > 500) {{
+            clearInterval(interval);
+            console.log('[TAB] Restoration complete');
+        }}
+        count++;
+    }}, 10);
+}})();
+</script>
+"""
+components.html(tab_restore_html, height=0)
 
 # --- 5-1. Info ---
 with tab_info:
@@ -867,7 +843,7 @@ with tab_info:
         """)
     with col2:
         if st.button("📸 Photoタブへ →", key="goto_photo", use_container_width=True):
-            st.query_params.update({"tab": "1"})
+            st.session_state.active_tab = 1
             st.rerun()
     
     # Music タブへのリンク
@@ -879,7 +855,7 @@ with tab_info:
         """)
     with col2:
         if st.button("🎵 Musicタブへ →", key="goto_music", use_container_width=True):
-            st.query_params.update({"tab": "3"})
+            st.session_state.active_tab = 2
             st.rerun()
     
     # Memory タブへのリンク
@@ -897,7 +873,7 @@ with tab_info:
     with col2:
         st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
         if st.button("🎬 Memoryタブへ →", key="goto_memory", use_container_width=True):
-            st.query_params.update({"tab": "2"})
+            st.session_state.active_tab = 3
             st.rerun()
     
     # Live タブへのリンク
@@ -909,7 +885,7 @@ with tab_info:
         """)
     with col2:
         if st.button("📺 Liveタブへ →", key="goto_live", use_container_width=True):
-            st.query_params.update({"tab": "5"})
+            st.session_state.active_tab = 4
             st.rerun()
     
     # Message タブへのリンク
@@ -921,7 +897,7 @@ with tab_info:
         """)
     with col2:
         if st.button("💌 Messageタブへ →", key="goto_message", use_container_width=True):
-            st.query_params.update({"tab": "4"})
+            st.session_state.active_tab = 5
             st.rerun()
     
     st.markdown("""
@@ -1017,6 +993,16 @@ with tab_info:
 # --- 5-2. Memory ---
 with tab_memory:
     st.header("🎬 Memory - 彼の記憶")
+    
+    # アップロード完了メッセージを表示
+    if 'upload_message' in st.session_state:
+        msg_type, msg_text = st.session_state.upload_message
+        if msg_type == "success":
+            st.success(msg_text)
+        else:
+            st.warning(msg_text)
+        del st.session_state.upload_message
+    
     memory_df = get_data("Memory")
     
     st.subheader("📤 映像・音源をアップロード")
@@ -1150,20 +1136,15 @@ with tab_memory:
             
             updated_df = pd.concat([memory_df, new_row], ignore_index=True)
             
-            # タブを設定（保存の成功/失敗に関わらず）
+            # タブを設定（rerunの前）
             st.session_state.active_tab = 3  # Memoryタブ
             st.session_state.memory_uploader_key += 1
             
-            # URLパラメータにタブを設定
-            try:
-                st.query_params.update({"tab": "3"})
-            except:
-                pass
-            
+            # 保存
             if save_data("Memory", updated_df):
-                st.success("投稿が完了しました！")
+                st.session_state.upload_message = ("success", "投稿が完了しました！")
             else:
-                st.warning("投稿の保存に失敗しました")
+                st.session_state.upload_message = ("warning", "投稿の保存に失敗しました")
             
             st.cache_data.clear()
             st.rerun()
@@ -1201,10 +1182,6 @@ with tab_memory:
                         if st.button(f"👍 {row.get('likes', 0)}", key=f"like_memory_{idx}", type="secondary"):
                             memory_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
                             st.session_state.active_tab = 3  # Memoryタブ
-                            try:
-                                st.query_params.update({"tab": "3"})
-                            except:
-                                pass
                             
                             if save_data("Memory", memory_df):
                                 pass
@@ -1261,6 +1238,16 @@ with tab_memory:
 # --- 5-3. Photo/Story ---
 with tab_photo:
     st.subheader("📸 Share Photos & Stories")
+    
+    # アップロード完了メッセージを表示
+    if 'upload_message' in st.session_state:
+        msg_type, msg_text = st.session_state.upload_message
+        if msg_type == "success":
+            st.success(msg_text)
+        else:
+            st.warning(msg_text)
+        del st.session_state.upload_message
+    
     photo_df = get_data("Photo")
     
     st.subheader("📝 思い出を投稿する (写真なしでもOK)")
@@ -1318,25 +1305,22 @@ with tab_photo:
             # データを更新
             updated_df = pd.concat([photo_df, new_row], ignore_index=True)
             
-            # タブを設定（保存の成功/失敗に関わらず）
+            # タブを設定（最初に設定）
             st.session_state.active_tab = 1  # Photo/Storyタブ
             st.session_state.photo_uploader_key += 1
-            
-            # URLパラメータにタブを設定（st.rerun()でも保持される）
-            try:
-                st.query_params.update({"tab": "1"})
-            except:
-                pass
+            print(f"[UPLOAD] Set active_tab to 1 before rerun")
             
             # 保存を試みる
             save_result = save_data("Photo", updated_df)
             
+            # メッセージをsession_stateに保存
             if save_result:
-                st.success("投稿が完了しました！")
+                st.session_state.upload_message = ("success", "投稿が完了しました！")
             else:
-                st.warning("投稿の保存に失敗しました（データは表示されますが永続化されません）")
+                st.session_state.upload_message = ("warning", "投稿の保存に失敗しました")
             
             st.cache_data.clear()
+            print(f"[UPLOAD] About to rerun, active_tab is: {st.session_state.active_tab}")
             st.rerun()
         else:
             st.error("エピソードを入力するか、写真を選んでください。")
@@ -1379,10 +1363,6 @@ with tab_photo:
                             # Likesを増やす
                             photo_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
                             st.session_state.active_tab = 1  # Photo/Storyタブ
-                            try:
-                                st.query_params.update({"tab": "1"})
-                            except:
-                                pass
                             
                             if save_data("Photo", photo_df):
                                 pass
@@ -1399,6 +1379,16 @@ with tab_photo:
 # --- 5-4. Music ---
 with tab_music:
     st.subheader("🎵 Memorial Playlist")
+    
+    # アップロード完了メッセージを表示
+    if 'upload_message' in st.session_state:
+        msg_type, msg_text = st.session_state.upload_message
+        if msg_type == "success":
+            st.success(msg_text)
+        else:
+            st.warning(msg_text)
+        del st.session_state.upload_message
+    
     music_df = get_data("Music")
     
     # 曲名とアーティスト名の入力
@@ -1461,12 +1451,11 @@ with tab_music:
                     updated_df = pd.concat([music_df, new_row], ignore_index=True)
                     st.session_state.active_tab = 2  # Musicタブ
                     st.session_state.music_form_key += 1
-                    st.query_params["tab"] = "2"  # URLパラメータにタブを設定
                     
                     if save_data("Music", updated_df):
-                        st.success("エピソードを追加しました！")
+                        st.session_state.upload_message = ("success", "エピソードを追加しました！")
                     else:
-                        st.warning("保存に失敗しました")
+                        st.session_state.upload_message = ("warning", "保存に失敗しました")
                     
                     st.cache_data.clear()
                     st.rerun()
@@ -1505,12 +1494,11 @@ with tab_music:
                     updated_df = pd.concat([music_df, new_row], ignore_index=True)
                     st.session_state.active_tab = 2  # Musicタブ
                     st.session_state.music_form_key += 1
-                    st.query_params["tab"] = "2"  # URLパラメータにタブを設定
                     
                     if save_data("Music", updated_df):
-                        st.success("プレイリストに追加しました！")
+                        st.session_state.upload_message = ("success", "プレイリストに追加しました！")
                     else:
-                        st.warning("保存に失敗しました")
+                        st.session_state.upload_message = ("warning", "保存に失敗しました")
                     
                     st.cache_data.clear()
                     st.rerun()
@@ -1545,10 +1533,6 @@ with tab_music:
                         first_idx = song_episodes.index[0]
                         music_df.loc[first_idx, 'likes'] = int(song_episodes.iloc[0].get('likes', 0)) + 1
                         st.session_state.active_tab = 2  # Musicタブ
-                        try:
-                            st.query_params.update({"tab": "2"})
-                        except:
-                            pass
                         
                         if save_data("Music", music_df):
                             pass
@@ -1588,6 +1572,16 @@ with tab_live:
 # --- 5-6. Message ---
 with tab_message:
     st.subheader("💌 Messages to Kids")
+    
+    # アップロード完了メッセージを表示
+    if 'upload_message' in st.session_state:
+        msg_type, msg_text = st.session_state.upload_message
+        if msg_type == "success":
+            st.success(msg_text)
+        else:
+            st.warning(msg_text)
+        del st.session_state.upload_message
+    
     message_df = get_data("Message")
     
     st.info("💝 KOHEI AIBAへの想いやメッセージを送ることができます。投稿されたメッセージは運営が大切に保管します。")
@@ -1637,15 +1631,11 @@ with tab_message:
             updated_df = pd.concat([message_df, new_row], ignore_index=True)
             st.session_state.active_tab = 5  # Messageタブ
             st.session_state.message_form_key += 1
-            try:
-                st.query_params.update({"tab": "5"})
-            except:
-                pass
             
             if save_data("Message", updated_df):
-                st.success("✅ メッセージを受け付けました。大切に保管します。温かいメッセージをありがとうございます。")
+                st.session_state.upload_message = ("success", "✅ メッセージを受け付けました。大切に保管します。温かいメッセージをありがとうございます。")
             else:
-                st.warning("保存に失敗しました")
+                st.session_state.upload_message = ("warning", "保存に失敗しました")
             
             st.cache_data.clear()
             st.rerun()
