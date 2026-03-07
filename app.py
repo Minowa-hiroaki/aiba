@@ -1123,7 +1123,6 @@ with tab_memory:
                             if save_data("Memory", memory_df):
                                 pass
                             
-                            st.cache_data.clear()
                             st.rerun()
                     
                     # 説明
@@ -1301,7 +1300,6 @@ with tab_photo:
                             if save_data("Photo", photo_df):
                                 pass
                             
-                            st.cache_data.clear()
                             st.rerun()
                     
                     st.divider()
@@ -1465,7 +1463,6 @@ with tab_music:
                         if save_data("Music", music_df):
                             pass
                         
-                        st.cache_data.clear()
                         st.rerun()
                 
                 # ジャケット画像とエピソードを表示
