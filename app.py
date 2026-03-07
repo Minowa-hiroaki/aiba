@@ -409,11 +409,14 @@ def render_large_file_uploader(key="large_uploader", signed_url=None, public_url
 # --- 3. デザインCSS ---
 st.markdown("""
     <style>
-    .stApp { background-color: #020617 !important; color: #f1f5f9 !important; }
-    h1 { margin-bottom: 5px !important; text-align: center; }
-    .sub-text { margin-bottom: 25px !important; color: #94a3b8; font-size: 1.1rem; text-align: center; }
+    .stApp { 
+        background: linear-gradient(135deg, #a8daff 0%, #7cb3e9 50%, #4a90e2 100%) !important;
+        color: #1e3a5f !important;
+    }
+    h1 { margin-bottom: 5px !important; text-align: center; color: #1e3a5f !important; }
+    .sub-text { margin-bottom: 25px !important; color: #2c5282; font-size: 1.1rem; text-align: center; }
     
-    /* 入力フィールドのスタイル - 背景を暗く、文字を明るく */
+    /* 入力フィールドのスタイル - 白い背景、暗い文字 */
     input, textarea, 
     div[data-baseweb="input"] input,
     div[data-baseweb="textarea"] textarea,
@@ -421,11 +424,11 @@ st.markdown("""
     .stTextInput input, .stTextArea textarea,
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea {
-        background-color: #0f172a !important; 
-        color: #fbbf24 !important;
-        caret-color: #fbbf24 !important;
-        -webkit-text-fill-color: #fbbf24 !important;
-        border: 2px solid #334155 !important; 
+        background-color: #ffffff !important; 
+        color: #1e3a5f !important;
+        caret-color: #1e3a5f !important;
+        -webkit-text-fill-color: #1e3a5f !important;
+        border: 2px solid #7cb3e9 !important; 
         border-radius: 10px !important;
         font-weight: 500 !important;
     }
@@ -433,19 +436,19 @@ st.markdown("""
     /* より具体的な入力フィールドの色設定 */
     [data-testid="stTextInput"] input,
     [data-testid="stTextArea"] textarea {
-        color: #fbbf24 !important;
-        -webkit-text-fill-color: #fbbf24 !important;
-        background-color: #0f172a !important;
+        color: #1e3a5f !important;
+        -webkit-text-fill-color: #1e3a5f !important;
+        background-color: #ffffff !important;
     }
     
     /* フォーカス時のスタイル */
     [data-testid="stTextInput"] input:focus,
     [data-testid="stTextArea"] textarea:focus,
     input:focus, textarea:focus {
-        color: #fbbf24 !important;
-        -webkit-text-fill-color: #fbbf24 !important;
-        background-color: #0f172a !important;
-        border-color: #10b981 !important;
+        color: #1e3a5f !important;
+        -webkit-text-fill-color: #1e3a5f !important;
+        background-color: #ffffff !important;
+        border-color: #4a90e2 !important;
     }
     
     /* オートフィル時のスタイル */
@@ -455,34 +458,34 @@ st.markdown("""
     textarea:-webkit-autofill,
     textarea:-webkit-autofill:hover,
     textarea:-webkit-autofill:focus {
-        -webkit-text-fill-color: #fbbf24 !important;
-        -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
-        background-color: #0f172a !important;
-        color: #fbbf24 !important;
+        -webkit-text-fill-color: #1e3a5f !important;
+        -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+        background-color: #ffffff !important;
+        color: #1e3a5f !important;
     }
     
     /* プレースホルダーのスタイル */
     input::placeholder, textarea::placeholder {
-        color: #64748b !important;
+        color: #94a3b8 !important;
         opacity: 1 !important;
     }
     
     /* セレクトボックスのスタイル */
     div[data-baseweb="select"] > div {
-        background-color: #0f172a !important;
-        color: #fbbf24 !important;
-        border: 2px solid #334155 !important;
+        background-color: #ffffff !important;
+        color: #1e3a5f !important;
+        border: 2px solid #7cb3e9 !important;
     }
     
     /* ラジオボタンのラベル */
     div[role="radiogroup"] label {
-        color: #f1f5f9 !important;
+        color: #1e3a5f !important;
     }
     
     /* File Uploaderのスタイル */
     [data-testid="stFileUploader"] label,
     [data-testid="stFileUploader"] > div {
-        color: #f1f5f9 !important;
+        color: #1e3a5f !important;
     }
     
     div.stButton > button, button[kind="primary"], button[type="submit"] {
@@ -491,24 +494,24 @@ st.markdown("""
         height: 50px !important; width: 100% !important; border: none !important;
     }
     button[kind="secondary"] {
-        background-color: #1e293b !important; color: #ffffff !important;
-        border: 2px solid #334155 !important;
+        background-color: #e6f4ff !important; color: #1e3a5f !important;
+        border: 2px solid #7cb3e9 !important;
     }
     .post-card {
-        background-color: #0f172a; padding: 20px; border-radius: 15px;
-        border: 1px solid #1e293b; margin-bottom: 15px;
+        background-color: #ffffff; padding: 20px; border-radius: 15px;
+        border: 1px solid #b3d9ff; margin-bottom: 15px;
     }
-    .stTabs [data-baseweb="tab-list"] { background-color: #0f172a; padding: 5px; border-radius: 10px; }
-    .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #10b981 !important; }
+    .stTabs [data-baseweb="tab-list"] { background-color: #ffffff; padding: 5px; border-radius: 10px; }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #10b981 !important; background-color: #e6f4ff !important; }
     
     /* Expanderのスタイル */
     div[data-testid="stExpander"] {
-        background-color: #0f172a !important;
-        border: 1px solid #334155 !important;
+        background-color: #ffffff !important;
+        border: 1px solid #7cb3e9 !important;
         border-radius: 10px !important;
     }
     div[data-testid="stExpander"] summary {
-        color: #fbbf24 !important;
+        color: #1e3a5f !important;
         font-weight: 600 !important;
     }
     </style>
@@ -517,6 +520,14 @@ st.markdown("""
 # --- 4. ログイン管理 ---
 if 'user_name' not in st.session_state:
     st.session_state.user_name = ""
+
+# ページロードカウント（スクロール制御用）
+if 'page_load_count' not in st.session_state:
+    st.session_state.page_load_count = 0
+
+# アクティブタブの管理（タブ復元用）
+if 'active_tab' not in st.session_state:
+    st.session_state.active_tab = 0
 
 # ファイルアップローダーのリセット用キー
 if 'photo_uploader_key' not in st.session_state:
@@ -618,72 +629,169 @@ if not st.session_state.user_name:
         
         if submitted and name_input:
             st.session_state.user_name = name_input
+            st.session_state.page_load_count = 0  # ログイン時はスクロール実行
+            st.session_state.active_tab = 0  # Infoタブから開始
             st.rerun()
     st.stop()
 
 # --- 5. メインレイアウト ---
+# ページトップのアンカー
+st.markdown('<div id="page-top"></div>', unsafe_allow_html=True)
+
 st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🎧 愛波 Memorial</h3>", unsafe_allow_html=True)
 st.markdown(f"<p style='text-align: center; color: #10b981; font-size: 0.9rem;'>User: {st.session_state.user_name}</p>", unsafe_allow_html=True)
 
+# デバッグ用：active_tabの値を表示
+st.markdown(f"<p style='text-align: center; color: #666; font-size: 0.8rem;'>Debug: active_tab = {st.session_state.active_tab}</p>", unsafe_allow_html=True)
+
+# ログイン直後のスクロール制御（components.htmlを使用）
+if st.session_state.page_load_count == 0:
+    scroll_html = """
+    <script>
+    // ページロード直後にスクロールを最上部に固定
+    (function() {
+        console.log('[SCROLL] Forcing page to top');
+        
+        function scrollToTop() {
+            try {
+                // window スクロール
+                if (window.scrollTo) window.scrollTo(0, 0);
+                if (window.parent && window.parent.scrollTo) {
+                    try { window.parent.scrollTo(0, 0); } catch(e) {}
+                }
+                
+                // document 要素
+                if (document.documentElement) {
+                    document.documentElement.scrollTop = 0;
+                }
+                if (document.body) {
+                    document.body.scrollTop = 0;
+                }
+                
+                // Streamlit特有の要素
+                var main = document.querySelector('section.main');
+                if (main) main.scrollTop = 0;
+                
+                var app = document.querySelector('[data-testid="stAppViewContainer"]');
+                if (app) app.scrollTop = 0;
+                
+                var stApp = document.querySelector('[data-testid="stApp"]');
+                if (stApp) stApp.scrollTop = 0;
+            } catch(e) {
+                // エラーは無視（nullチェック済み）
+            }
+        }
+        
+        // 即座に実行
+        scrollToTop();
+        
+        // 繰り返し実行（5秒間）
+        var count = 0;
+        var interval = setInterval(function() {
+            scrollToTop();
+            count++;
+            if (count > 500) {
+                clearInterval(interval);
+                console.log('[SCROLL] Complete after', count, 'attempts');
+            }
+        }, 10);
+    })();
+    </script>
+    """
+    components.html(scroll_html, height=0)
+    st.session_state.page_load_count += 1
+
 tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st.tabs(["Info", "Photo/Story", "Music", "Memory", "Live", "Message", "Fund"])
+
+# タブ復元用のスクリプト（アップロード後）- st.tabs()の後に配置
+restore_tab = st.session_state.active_tab
+st.write(f"DEBUG: restore_tab value = {restore_tab}")  # デバッグ用
+if restore_tab > 0:
+    st.write(f"DEBUG: Executing tab restore script for tab {restore_tab}")  # デバッグ用
+    tab_restore_html = f"""
+    <script>
+    (function() {{
+        console.log('[TAB] Starting tab restoration to index:', {restore_tab});
+        var targetIndex = {restore_tab};
+        var clickCount = 0;
+        var attempts = 0;
+        
+        function clickTargetTab() {{
+            attempts++;
+            try {{
+                // parent.documentから検索
+                var tabs = parent.document.querySelectorAll('button[role="tab"]');
+                
+                if (!tabs || tabs.length === 0) {{
+                    // 通常のdocumentから検索
+                    tabs = document.querySelectorAll('button[role="tab"]');
+                }}
+                
+                if (tabs && tabs.length > targetIndex) {{
+                    var tab = tabs[targetIndex];
+                    
+                    // 既に選択されているか確認
+                    if (tab.getAttribute('aria-selected') === 'true') {{
+                        if (clickCount === 0) {{
+                            console.log('[TAB] Tab', targetIndex, 'already selected');
+                        }}
+                        return true;
+                    }}
+                    
+                    // タブをクリック
+                    console.log('[TAB] Clicking tab', targetIndex, '(attempt', attempts, ')');
+                    clickCount++;
+                    tab.click();
+                    tab.focus();
+                    return false;
+                }} else {{
+                    if (attempts === 1) {{
+                        console.log('[TAB] Tabs not found yet, found', tabs ? tabs.length : 0, 'tabs');
+                    }}
+                }}
+            }} catch(e) {{
+                console.error('[TAB] Error:', e);
+            }}
+            return false;
+        }}
+        
+        // 100ms後に開始（タブの描画を待つ）
+        setTimeout(function() {{
+            // 即座に実行
+            clickTargetTab();
+            
+            // 10ms間隔で5秒間（500回）
+            var count = 0;
+            var interval = setInterval(function() {{
+                if (clickTargetTab() || count > 500) {{
+                    clearInterval(interval);
+                    console.log('[TAB] Completed. Total clicks:', clickCount, 'Total attempts:', attempts);
+                }}
+                count++;
+            }}, 10);
+        }}, 100);
+    }})();
+    </script>
+    """
+    components.html(tab_restore_html, height=0)
+    st.session_state.active_tab = 0
+else:
+    st.write(f"DEBUG: Tab restore skipped (restore_tab = {restore_tab})")  # デバッグ用
 
 # --- 5-1. Info ---
 with tab_info:
-    st.header("Celebration of Kohei")
-    st.markdown("### **恒平 お別れ会のご案内**")
-    
+    st.header("Event Info")
     st.markdown("""
-    2/10、愛波恒平が New York にて亡くなりました。
-    
-    2/25にNYで葬儀・埋葬を行って来ました。  
-    日本でも恒平と親しかった皆さん、恒平が仲良くしていた皆さんとお別れの時間を持ちたいと思い、家族・仲間で会を企画しています。
-    
-    **この会は「お葬式」ではなく、恒平の人生をみんなで祝い、語り、共有し、つながるための会です。**
-    
-    恒平が愛したワイワイと楽しい、みんなが繋がれる雰囲気の最高のハウスパーティをイメージしています。
-    """)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### 📅 開催概要
-    
-    - **日時：** （仮） 3/21（土）16:30〜20:00
-    - **場所：** 現在未定（決まり次第ご案内します）
-    - **内容（予定）：**
-        - 16:30〜18:30　恒平をお祝いする企画
-        - 食事・お酒はカジュアルにご用意します
-            - もし何かお持ちいただける場合は、持ち寄りも歓迎です
-    - **会費：** 会費制（後日ご連絡します）
-    """)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### 🙋 ご参加について
-    
-    参加人数の把握のため、下記アンケートにご記入をお願いします。
-    
-    - URL（後日ご案内）
-    """)
-    
-    st.divider()
-    
-    st.markdown("""
-    ### 📸 写真・動画・音楽・メッセージの共有について
-    
-    当日、恒平の思い出をみんなで共有できるよう、写真・動画・音楽・エピソードなどをアップできるサイトを用意しました。
-    
-    **当日お越しになれる方も、難しい方も、ぜひこちらから恒平との思い出を共有いただけたら嬉しいです。**
-    
-    また、当日みんなで共有したいこと、披露したいことなどのアイディアがあれば、ぜひご提案ください。
+    ### **愛波 Memorial Party - The Final Set**
+    * **Date:** TBA
+    * **Place:** TBA
     
     ---
     
     ### 📺 当日参加できない方へ
     
     当日現地に来られない方も、**Liveタブ**からリアルタイムで会場の様子をご覧いただけます。  
-    世界中どこからでも、恒平への想いを共有しましょう 🌍✨
+    世界中どこからでも、KOHEI AIBAへの想いを共有しましょう 🌍✨
     """)
     
     st.divider()
@@ -911,11 +1019,17 @@ with tab_memory:
             
             updated_df = pd.concat([memory_df, new_row], ignore_index=True)
             
+            # タブを設定（保存の成功/失敗に関わらず）
+            st.session_state.active_tab = 3  # Memoryタブ
+            st.session_state.memory_uploader_key += 1
+            
             if save_data("Memory", updated_df):
                 st.success("投稿が完了しました！")
-                st.session_state.memory_uploader_key += 1
-                st.cache_data.clear()
-                st.rerun()
+            else:
+                st.warning("投稿の保存に失敗しました")
+            
+            st.cache_data.clear()
+            st.rerun()
         else:
             st.error("説明を入力してください")
     
@@ -949,9 +1063,13 @@ with tab_memory:
                     with col_like:
                         if st.button(f"👍 {row.get('likes', 0)}", key=f"like_memory_{idx}", type="secondary"):
                             memory_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
+                            st.session_state.active_tab = 3  # Memoryタブ
+                            
                             if save_data("Memory", memory_df):
-                                st.cache_data.clear()
-                                st.rerun()
+                                pass
+                            
+                            st.cache_data.clear()
+                            st.rerun()
                     
                     # 説明
                     st.write(row.get('description', ''))
@@ -1059,12 +1177,21 @@ with tab_photo:
             # データを更新
             updated_df = pd.concat([photo_df, new_row], ignore_index=True)
             
+            # タブを設定（保存の成功/失敗に関わらず）
+            st.session_state.active_tab = 1  # Photo/Storyタブ
+            st.session_state.photo_uploader_key += 1
+            
             # 保存を試みる
-            if save_data("Photo", updated_df):
+            save_result = save_data("Photo", updated_df)
+            st.write(f"DEBUG: save_data result = {save_result}")  # デバッグ用
+            
+            if save_result:
                 st.success("投稿が完了しました！")
-                st.session_state.photo_uploader_key += 1
-                st.cache_data.clear()
-                st.rerun()
+            else:
+                st.warning("投稿の保存に失敗しました（データは表示されますが永続化されません）")
+            
+            st.cache_data.clear()
+            st.rerun()
         else:
             st.error("エピソードを入力するか、写真を選んでください。")
 
@@ -1105,9 +1232,13 @@ with tab_photo:
                         if st.button(f"👍 {row.get('likes', 0)}", key=f"like_photo_{idx}", type="secondary"):
                             # Likesを増やす
                             photo_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
+                            st.session_state.active_tab = 1  # Photo/Storyタブ
+                            
                             if save_data("Photo", photo_df):
-                                st.cache_data.clear()
-                                st.rerun()
+                                pass
+                            
+                            st.cache_data.clear()
+                            st.rerun()
                     
                     st.divider()
         else:
@@ -1178,12 +1309,16 @@ with tab_music:
                         "likes": 0
                     }])
                     updated_df = pd.concat([music_df, new_row], ignore_index=True)
+                    st.session_state.active_tab = 2  # Musicタブ
+                    st.session_state.music_form_key += 1
                     
                     if save_data("Music", updated_df):
                         st.success("エピソードを追加しました！")
-                        st.session_state.music_form_key += 1
-                        st.cache_data.clear()
-                        st.rerun()
+                    else:
+                        st.warning("保存に失敗しました")
+                    
+                    st.cache_data.clear()
+                    st.rerun()
                 else:
                     st.error("エピソードを入力してください。")
         else:
@@ -1217,12 +1352,16 @@ with tab_music:
                         "likes": 0
                     }])
                     updated_df = pd.concat([music_df, new_row], ignore_index=True)
+                    st.session_state.active_tab = 2  # Musicタブ
+                    st.session_state.music_form_key += 1
                     
                     if save_data("Music", updated_df):
                         st.success("プレイリストに追加しました！")
-                        st.session_state.music_form_key += 1
-                        st.cache_data.clear()
-                        st.rerun()
+                    else:
+                        st.warning("保存に失敗しました")
+                    
+                    st.cache_data.clear()
+                    st.rerun()
                 else:
                     st.error("エピソードを入力してください。")
     
@@ -1253,9 +1392,13 @@ with tab_music:
                         # この曲の最初のエピソードのLikesを増やす
                         first_idx = song_episodes.index[0]
                         music_df.loc[first_idx, 'likes'] = int(song_episodes.iloc[0].get('likes', 0)) + 1
+                        st.session_state.active_tab = 2  # Musicタブ
+                        
                         if save_data("Music", music_df):
-                            st.cache_data.clear()
-                            st.rerun()
+                            pass
+                        
+                        st.cache_data.clear()
+                        st.rerun()
                 
                 # ジャケット画像とエピソードを表示
                 artwork_url = song_row.get('artwork_url', '')
@@ -1336,12 +1479,16 @@ with tab_message:
             }])
             
             updated_df = pd.concat([message_df, new_row], ignore_index=True)
+            st.session_state.active_tab = 5  # Messageタブ
+            st.session_state.message_form_key += 1
             
             if save_data("Message", updated_df):
                 st.success("✅ メッセージを受け付けました。大切に保管し、子供たちへ届けます。温かいメッセージをありがとうございます。")
-                st.session_state.message_form_key += 1
-                st.cache_data.clear()
-                st.rerun()
+            else:
+                st.warning("保存に失敗しました")
+            
+            st.cache_data.clear()
+            st.rerun()
         else:
             st.error("名前とメッセージを入力してください")
 
