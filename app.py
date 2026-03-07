@@ -1361,29 +1361,26 @@ with tab_music:
             )
             st.info("📌 注意：入力後、Info画面に移動することがありますが、問題なく入力できていることが多いです。Musicタブで入力内容を確認して、エピソードを追加してください。")
             if st.button("エピソードを追加", key=f"add_episode_{st.session_state.music_form_key}", type="primary"):
-                if new_comment:
-                    # 既存の曲情報を使って新しいエピソードを追加
-                    new_row = pd.DataFrame([{
-                        "user": st.session_state.user_name,
-                        "song": song_in,
-                        "artist": artist_in,
-                        "youtube_url": "",
-                        "artwork_url": first_entry.get('artwork_url', ''),
-                        "comment": new_comment,
-                        "likes": 0
-                    }])
-                    updated_df = pd.concat([music_df, new_row], ignore_index=True)
-                    st.session_state.music_form_key += 1
-                    
-                    if save_data("Music", updated_df):
-                        st.session_state.upload_message = ("success", "エピソードを追加しました！")
-                    else:
-                        st.session_state.upload_message = ("warning", "保存に失敗しました")
-                    
-                    st.cache_data.clear()
-                    st.rerun()
+                # 既存の曲情報を使って新しいエピソードを追加
+                new_row = pd.DataFrame([{
+                    "user": st.session_state.user_name,
+                    "song": song_in,
+                    "artist": artist_in,
+                    "youtube_url": "",
+                    "artwork_url": first_entry.get('artwork_url', ''),
+                    "comment": new_comment if new_comment else "",
+                    "likes": 0
+                }])
+                updated_df = pd.concat([music_df, new_row], ignore_index=True)
+                st.session_state.music_form_key += 1
+                
+                if save_data("Music", updated_df):
+                    st.session_state.upload_message = ("success", "エピソードを追加しました！")
                 else:
-                    st.error("エピソードを入力してください。")
+                    st.session_state.upload_message = ("warning", "保存に失敗しました")
+                
+                st.cache_data.clear()
+                st.rerun()
         else:
             # 【未登録の曲の場合】
             st.subheader("🎵 新しい曲をプレイリストに追加")
@@ -1406,28 +1403,25 @@ with tab_music:
             st.info("📌 注意：入力後、Info画面に移動することがありますが、問題なく入力できていることが多いです。Musicタブで入力内容を確認して、プレイリストに追加してください。")
             
             if st.button("プレイリストに追加", key=f"add_new_song_{st.session_state.music_form_key}", type="primary"):
-                if m_comment:
-                    new_row = pd.DataFrame([{
-                        "user": st.session_state.user_name,
-                        "song": song_in,
-                        "artist": artist_in,
-                        "youtube_url": "",
-                        "artwork_url": artwork_url if artwork_url else "",
-                        "comment": m_comment,
-                        "likes": 0
-                    }])
-                    updated_df = pd.concat([music_df, new_row], ignore_index=True)
-                    st.session_state.music_form_key += 1
-                    
-                    if save_data("Music", updated_df):
-                        st.session_state.upload_message = ("success", "プレイリストに追加しました！")
-                    else:
-                        st.session_state.upload_message = ("warning", "保存に失敗しました")
-                    
-                    st.cache_data.clear()
-                    st.rerun()
+                new_row = pd.DataFrame([{
+                    "user": st.session_state.user_name,
+                    "song": song_in,
+                    "artist": artist_in,
+                    "youtube_url": "",
+                    "artwork_url": artwork_url if artwork_url else "",
+                    "comment": m_comment if m_comment else "",
+                    "likes": 0
+                }])
+                updated_df = pd.concat([music_df, new_row], ignore_index=True)
+                st.session_state.music_form_key += 1
+                
+                if save_data("Music", updated_df):
+                    st.session_state.upload_message = ("success", "プレイリストに追加しました！")
                 else:
-                    st.error("エピソードを入力してください。")
+                    st.session_state.upload_message = ("warning", "保存に失敗しました")
+                
+                st.cache_data.clear()
+                st.rerun()
     
     # プレイリスト表示
     st.divider()
