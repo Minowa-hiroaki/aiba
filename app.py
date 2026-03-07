@@ -856,26 +856,75 @@ with tab_info:
     
     #### 📢 各タブの使い方
     
-    **📸 Photo/Story** - 思い出の写真とエピソードを投稿  
-    あなたの思い出を写真や文章で共有してください。写真なしでもOK！
+    """)
     
-    **🎵 Music** - KOHEI AIBAが愛した音楽、あなたとの思い出の曲  
-    曲とエピソードを投稿して、みんなで共有しましょう。
+    # Photo/Story タブへのリンク
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("""
+        **📸 Photo/Story** - 思い出の写真とエピソードを投稿  
+        あなたの思い出を写真や文章で共有してください。写真なしでもOK！
+        """)
+    with col2:
+        if st.button("📸 Photoタブへ →", key="goto_photo", use_container_width=True):
+            st.query_params.update({"tab": "1"})
+            st.rerun()
     
-    **🎬 Memory** - KOHEI AIBAの映像・音源を共有  
-    - **YouTube URL** ⭐推奨: YouTube動画（限定公開OK）を埋め込み再生
-    - **Google Drive URL**: 大容量ファイルはリンクから視聴
-    - **ファイルアップロード**: 小容量ファイル（200MB以下推奨）を直接アップロード
+    # Music タブへのリンク
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("""
+        **🎵 Music** - KOHEI AIBAが愛した音楽、あなたとの思い出の曲  
+        曲とエピソードを投稿して、みんなで共有しましょう。
+        """)
+    with col2:
+        if st.button("🎵 Musicタブへ →", key="goto_music", use_container_width=True):
+            st.query_params.update({"tab": "3"})
+            st.rerun()
     
-    💡 **大容量動画の推奨方法**: YouTube（限定公開）にアップロード → URLを投稿  
-    （Streamlit上で直接再生できます）
+    # Memory タブへのリンク
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("""
+        **🎬 Memory** - KOHEI AIBAの映像・音源を共有  
+        - **YouTube URL** ⭐推奨: YouTube動画（限定公開OK）を埋め込み再生
+        - **Google Drive URL**: 大容量ファイルはリンクから視聴
+        - **ファイルアップロード**: 小容量ファイル（200MB以下推奨）を直接アップロード
+        
+        💡 **大容量動画の推奨方法**: YouTube（限定公開）にアップロード → URLを投稿  
+        （Streamlit上で直接再生できます）
+        """)
+    with col2:
+        st.markdown("<div style='margin-top: 0px;'></div>", unsafe_allow_html=True)
+        if st.button("🎬 Memoryタブへ →", key="goto_memory", use_container_width=True):
+            st.query_params.update({"tab": "2"})
+            st.rerun()
     
-    **📺 Live** - イベント当日のライブ配信  
-    当日来られない方も、会場の様子をリアルタイムで視聴できます。
+    # Live タブへのリンク
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("""
+        **📺 Live** - イベント当日のライブ配信  
+        当日来られない方も、会場の様子をリアルタイムで視聴できます。
+        """)
+    with col2:
+        if st.button("📺 Liveタブへ →", key="goto_live", use_container_width=True):
+            st.query_params.update({"tab": "5"})
+            st.rerun()
     
-    **💌 Message** - 子供たちへのメッセージ  
-    KOHEI AIBAの子供たちへ、動画やメッセージを送ることができます。
+    # Message タブへのリンク
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("""
+        **💌 Message** - 子供たちへのメッセージ  
+        KOHEI AIBAの子供たちへ、動画やメッセージを送ることができます。
+        """)
+    with col2:
+        if st.button("💌 Messageタブへ →", key="goto_message", use_container_width=True):
+            st.query_params.update({"tab": "4"})
+            st.rerun()
     
+    st.markdown("""
     ---
     
     ### 💡 みんなで参加しよう！
