@@ -531,9 +531,86 @@ if 'uploaded_file_url' not in st.session_state:
     st.session_state.uploaded_file_url = {}
 
 if not st.session_state.user_name:
-    st.markdown("<div style='height: 80px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
     st.markdown("<h1>🎧 愛波 Memorial</h1>", unsafe_allow_html=True)
     st.markdown("<p class='sub-text'>KOHEI AIBAを愛する仲間たちのための場所です。</p>", unsafe_allow_html=True)
+    
+    # スライドショー
+    slideshow_html = """
+    <style>
+        .slideshow-container {
+            position: relative;
+            max-width: 600px;
+            height: 400px;
+            margin: 20px auto;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+            background-color: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .slide {
+            display: none;
+            width: 100%;
+            height: 100%;
+            animation: fadeIn 1s;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        .slide.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .slide img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+    
+    <div class="slideshow-container">
+        <div class="slide active">
+            <img src="https://storage.googleapis.com/aiba-memorial-pthotos/images/login1.jpg" alt="KOHEI AIBA 1">
+        </div>
+        <div class="slide">
+            <img src="https://storage.googleapis.com/aiba-memorial-pthotos/images/login2.jpg" alt="KOHEI AIBA 2">
+        </div>
+        <div class="slide">
+            <img src="https://storage.googleapis.com/aiba-memorial-pthotos/images/login3.jpg" alt="KOHEI AIBA 3">
+        </div>
+    </div>
+    
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        
+        function showNextSlide() {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        
+        // 4秒ごとに次のスライドを表示
+        setInterval(showNextSlide, 4000);
+    </script>
+    """
+    
+    components.html(slideshow_html, height=450)
     
     with st.form("login_form"):
         name_input = st.text_input("お名前を入力してください (Your Name)", placeholder="Enter your name here...")
