@@ -916,8 +916,8 @@ with tab_info:
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown("""
-        **💌 Message** - 子供たちへのメッセージ  
-        KOHEI AIBAの子供たちへ、動画やメッセージを送ることができます。
+        **💌 Message** - 恒平へのメッセージ  
+        KOHEI AIBAへ、動画やメッセージを送ることができます。
         """)
     with col2:
         if st.button("💌 Messageタブへ →", key="goto_message", use_container_width=True):
@@ -1590,9 +1590,9 @@ with tab_message:
     st.subheader("💌 Messages to Kids")
     message_df = get_data("Message")
     
-    st.info("💝 KOHEI AIBAの子供たちへの想いやメッセージを送ることができます。投稿されたメッセージは運営が大切に保管し、子供たちへ届けます。")
+    st.info("💝 KOHEI AIBAへの想いやメッセージを送ることができます。投稿されたメッセージは運営が大切に保管します。")
     
-    st.subheader("📝 子供たちへのメッセージを送る")
+    st.subheader("📝 恒平へのメッセージを送る")
     
     # 名前入力
     msg_name = st.text_input(
@@ -1616,8 +1616,8 @@ with tab_message:
     
     # メッセージ入力
     msg_text = st.text_area(
-        "子供たちへのメッセージ",
-        placeholder="子供たちへの想いやメッセージを自由に綴ってください...",
+        "恒平へのメッセージ",
+        placeholder="恒平への想いやメッセージを自由に綴ってください...",
         height=150,
         key=f"message_text_{st.session_state.message_form_key}"
     )
@@ -1643,7 +1643,7 @@ with tab_message:
                 pass
             
             if save_data("Message", updated_df):
-                st.success("✅ メッセージを受け付けました。大切に保管し、子供たちへ届けます。温かいメッセージをありがとうございます。")
+                st.success("✅ メッセージを受け付けました。大切に保管します。温かいメッセージをありがとうございます。")
             else:
                 st.warning("保存に失敗しました")
             
