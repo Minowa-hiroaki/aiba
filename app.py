@@ -1017,6 +1017,8 @@ with tab_memory:
             if file_size_mb > 200:
                 st.error("⚠️ 200MBを超えるファイルはGoogle Driveのご利用を推奨します")
     
+    st.info("📌 注意：投稿後、Info画面に移動することがありますが、問題なく投稿できていることが多いです。Memoryタブで投稿を確認してください。")
+    
     if st.button("投稿する", key="post_memory", type="primary"):
         if mem_description:
             # YouTube/Google Drive URLを確認
@@ -1205,6 +1207,8 @@ with tab_photo:
         key=f"photo_comment_{st.session_state.photo_uploader_key}"
     )
     
+    st.info("📌 注意：投稿後、Info画面に移動することがありますが、問題なく投稿できていることが多いです。Photo/Storyタブで投稿を確認してください。")
+    
     if st.button("Post to Gallery", type="primary"):
         if p_comment or uploaded_file:
             # 画像をGCSにアップロード
@@ -1355,6 +1359,7 @@ with tab_music:
                 "KOHEI AIBAとの思い出を共有してください",
                 key=f"music_new_comment_{st.session_state.music_form_key}"
             )
+            st.info("📌 注意：投稿後、Info画面に移動することがありますが、問題なく投稿できていることが多いです。Musicタブで投稿を確認してください。")
             if st.button("エピソードを追加", key=f"add_episode_{st.session_state.music_form_key}", type="primary"):
                 if new_comment:
                     # 既存の曲情報を使って新しいエピソードを追加
@@ -1397,6 +1402,8 @@ with tab_music:
                 "この曲にまつわるKOHEI AIBAとのエピソード",
                 key=f"music_comment_{st.session_state.music_form_key}"
             )
+            
+            st.info("📌 注意：投稿後、Info画面に移動することがありますが、問題なく投稿できていることが多いです。Musicタブで投稿を確認してください。")
             
             if st.button("プレイリストに追加", key=f"add_new_song_{st.session_state.music_form_key}", type="primary"):
                 if m_comment:
@@ -1531,6 +1538,8 @@ with tab_message:
         height=150,
         key=f"message_text_{st.session_state.message_form_key}"
     )
+    
+    st.info("📌 注意：投稿後、Info画面に移動することがありますが、問題なく投稿できていることが多いです。Messageタブで投稿を確認してください。")
     
     if st.button("メッセージを送る", key=f"post_message_{st.session_state.message_form_key}", type="primary"):
         if msg_name and msg_text:
