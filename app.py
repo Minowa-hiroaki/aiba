@@ -525,9 +525,25 @@ if 'user_name' not in st.session_state:
 if 'page_load_count' not in st.session_state:
     st.session_state.page_load_count = 0
 
-# アクティブタブの管理（タブ復元用）
+# アクティブタブの管理（タブ復元用）- URLパラメータから読み取る
+try:
+    url_tab = st.query_params.get("tab", "0")
+    initial_tab = int(url_tab) if url_tab else 0
+    print(f"[DEBUG] URL param 'tab' = {url_tab}, initial_tab = {initial_tab}")  # コンソールログ
+except Exception as e:
+    print(f"[DEBUG] Failed to read URL param: {e}")  # コンソールログ
+    initial_tab = 0
+
 if 'active_tab' not in st.session_state:
-    st.session_state.active_tab = 0
+    st.session_state.active_tab = initial_tab
+    print(f"[DEBUG] Initializing active_tab to {initial_tab}")  # コンソールログ
+else:
+    # URLパラメータがあればそれを優先
+    if initial_tab > 0:
+        st.session_state.active_tab = initial_tab
+        print(f"[DEBUG] Updating active_tab from URL to {initial_tab}")  # コンソールログ
+    else:
+        print(f"[DEBUG] Keeping existing active_tab = {st.session_state.active_tab}")  # コンソールログ
 
 # ファイルアップローダーのリセット用キー
 if 'photo_uploader_key' not in st.session_state:
@@ -755,7 +771,7 @@ if restore_tab > 0:
             return false;
         }}
         
-        // 100ms後に開始（タブの描画を待つ）
+        // 500ms後に開始（タブの完全な描画を待つ）
         setTimeout(function() {{
             // 即座に実行
             clickTargetTab();
@@ -1023,6 +1039,12 @@ with tab_memory:
             st.session_state.active_tab = 3  # Memoryタブ
             st.session_state.memory_uploader_key += 1
             
+            # URLパラメータにタブを設定
+            try:
+                st.query_params.update({"tab": "3"})
+            except:
+                pass
+            
             if save_data("Memory", updated_df):
                 st.success("投稿が完了しました！")
             else:
@@ -1064,6 +1086,10 @@ with tab_memory:
                         if st.button(f"👍 {row.get('likes', 0)}", key=f"like_memory_{idx}", type="secondary"):
                             memory_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
                             st.session_state.active_tab = 3  # Memoryタブ
+                            try:
+                                st.query_params.update({"tab": "3"})
+                            except:
+                                pass
                             
                             if save_data("Memory", memory_df):
                                 pass
@@ -1154,7 +1180,9 @@ with tab_photo:
     )
     
     if st.button("Post to Gallery", type="primary"):
+        st.write("DEBUG: Post button clicked!")  # デバッグ用
         if p_comment or uploaded_file:
+            st.write("DEBUG: Comment or file exists")  # デバッグ用
             # 画像をGCSにアップロード
             image_url = ""
             if uploaded_file is not None and USE_GCS:
@@ -1177,9 +1205,20 @@ with tab_photo:
             # データを更新
             updated_df = pd.concat([photo_df, new_row], ignore_index=True)
             
+            st.write(f"DEBUG: Before setting active_tab, current value = {st.session_state.active_tab}")  # デバッグ用
+            
             # タブを設定（保存の成功/失敗に関わらず）
             st.session_state.active_tab = 1  # Photo/Storyタブ
             st.session_state.photo_uploader_key += 1
+            
+            st.write(f"DEBUG: After setting active_tab = {st.session_state.active_tab}")  # デバッグ用
+            
+            # URLパラメータにタブを設定（st.rerun()でも保持される）
+            try:
+                st.query_params.update({"tab": "1"})
+                st.write("DEBUG: query_params updated successfully")  # デバッグ用
+            except Exception as e:
+                st.write(f"DEBUG: query_params update failed: {e}")  # デバッグ用
             
             # 保存を試みる
             save_result = save_data("Photo", updated_df)
@@ -1190,6 +1229,7 @@ with tab_photo:
             else:
                 st.warning("投稿の保存に失敗しました（データは表示されますが永続化されません）")
             
+            st.write(f"DEBUG: Just before st.rerun(), active_tab = {st.session_state.active_tab}")  # デバッグ用
             st.cache_data.clear()
             st.rerun()
         else:
@@ -1233,6 +1273,10 @@ with tab_photo:
                             # Likesを増やす
                             photo_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
                             st.session_state.active_tab = 1  # Photo/Storyタブ
+                            try:
+                                st.query_params.update({"tab": "1"})
+                            except:
+                                pass
                             
                             if save_data("Photo", photo_df):
                                 pass
@@ -1311,6 +1355,7 @@ with tab_music:
                     updated_df = pd.concat([music_df, new_row], ignore_index=True)
                     st.session_state.active_tab = 2  # Musicタブ
                     st.session_state.music_form_key += 1
+                    st.query_params["tab"] = "2"  # URLパラメータにタブを設定
                     
                     if save_data("Music", updated_df):
                         st.success("エピソードを追加しました！")
@@ -1354,6 +1399,7 @@ with tab_music:
                     updated_df = pd.concat([music_df, new_row], ignore_index=True)
                     st.session_state.active_tab = 2  # Musicタブ
                     st.session_state.music_form_key += 1
+                    st.query_params["tab"] = "2"  # URLパラメータにタブを設定
                     
                     if save_data("Music", updated_df):
                         st.success("プレイリストに追加しました！")
@@ -1393,6 +1439,10 @@ with tab_music:
                         first_idx = song_episodes.index[0]
                         music_df.loc[first_idx, 'likes'] = int(song_episodes.iloc[0].get('likes', 0)) + 1
                         st.session_state.active_tab = 2  # Musicタブ
+                        try:
+                            st.query_params.update({"tab": "2"})
+                        except:
+                            pass
                         
                         if save_data("Music", music_df):
                             pass
@@ -1481,6 +1531,10 @@ with tab_message:
             updated_df = pd.concat([message_df, new_row], ignore_index=True)
             st.session_state.active_tab = 5  # Messageタブ
             st.session_state.message_form_key += 1
+            try:
+                st.query_params.update({"tab": "5"})
+            except:
+                pass
             
             if save_data("Message", updated_df):
                 st.success("✅ メッセージを受け付けました。大切に保管し、子供たちへ届けます。温かいメッセージをありがとうございます。")
