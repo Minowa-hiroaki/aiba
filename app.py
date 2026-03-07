@@ -529,21 +529,15 @@ if 'page_load_count' not in st.session_state:
 try:
     url_tab = st.query_params.get("tab", "0")
     initial_tab = int(url_tab) if url_tab else 0
-    print(f"[DEBUG] URL param 'tab' = {url_tab}, initial_tab = {initial_tab}")  # コンソールログ
 except Exception as e:
-    print(f"[DEBUG] Failed to read URL param: {e}")  # コンソールログ
     initial_tab = 0
 
 if 'active_tab' not in st.session_state:
     st.session_state.active_tab = initial_tab
-    print(f"[DEBUG] Initializing active_tab to {initial_tab}")  # コンソールログ
 else:
     # URLパラメータがあればそれを優先
     if initial_tab > 0:
         st.session_state.active_tab = initial_tab
-        print(f"[DEBUG] Updating active_tab from URL to {initial_tab}")  # コンソールログ
-    else:
-        print(f"[DEBUG] Keeping existing active_tab = {st.session_state.active_tab}")  # コンソールログ
 
 # ファイルアップローダーのリセット用キー
 if 'photo_uploader_key' not in st.session_state:
@@ -559,7 +553,7 @@ if 'uploaded_file_url' not in st.session_state:
 
 if not st.session_state.user_name:
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h1>🎧 愛波 Memorial</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🎧 愛波恒平 Memorial</h1>", unsafe_allow_html=True)
     st.markdown("<p class='sub-text'>KOHEI AIBAを愛する仲間たちのための場所です。</p>", unsafe_allow_html=True)
     
     # スライドショー
@@ -654,11 +648,8 @@ if not st.session_state.user_name:
 # ページトップのアンカー
 st.markdown('<div id="page-top"></div>', unsafe_allow_html=True)
 
-st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🎧 愛波 Memorial</h3>", unsafe_allow_html=True)
+st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🎧 愛波恒平 Memorial</h3>", unsafe_allow_html=True)
 st.markdown(f"<p style='text-align: center; color: #10b981; font-size: 0.9rem;'>User: {st.session_state.user_name}</p>", unsafe_allow_html=True)
-
-# デバッグ用：active_tabの値を表示
-st.markdown(f"<p style='text-align: center; color: #666; font-size: 0.8rem;'>Debug: active_tab = {st.session_state.active_tab}</p>", unsafe_allow_html=True)
 
 # ログイン直後のスクロール制御（components.htmlを使用）
 if st.session_state.page_load_count == 0:
@@ -721,9 +712,7 @@ tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st
 
 # タブ復元用のスクリプト（アップロード後）- st.tabs()の後に配置
 restore_tab = st.session_state.active_tab
-st.write(f"DEBUG: restore_tab value = {restore_tab}")  # デバッグ用
 if restore_tab > 0:
-    st.write(f"DEBUG: Executing tab restore script for tab {restore_tab}")  # デバッグ用
     tab_restore_html = f"""
     <script>
     (function() {{
@@ -785,35 +774,87 @@ if restore_tab > 0:
                 }}
                 count++;
             }}, 10);
-        }}, 100);
+        }}, 500);
     }})();
     </script>
     """
     components.html(tab_restore_html, height=0)
     st.session_state.active_tab = 0
-else:
-    st.write(f"DEBUG: Tab restore skipped (restore_tab = {restore_tab})")  # デバッグ用
 
 # --- 5-1. Info ---
 with tab_info:
     st.header("Event Info")
+    
+    # 訃報
     st.markdown("""
-    ### **愛波 Memorial Party - The Final Set**
-    * **Date:** TBA
-    * **Place:** TBA
+    ### 💙 Celebration Of Kohei
     
-    ---
+    2025年2月10日、愛波恒平が New York にて旅立ちました。
     
-    ### 📺 当日参加できない方へ
+    2月25日にNYで葬儀・埋葬を行ってまいりました。
     
-    当日現地に来られない方も、**Liveタブ**からリアルタイムで会場の様子をご覧いただけます。  
-    世界中どこからでも、KOHEI AIBAへの想いを共有しましょう 🌍✨
+    日本でも恒平と親しかった皆さん、恒平が大切にしていた皆さんと、改めて集い、恒平のことを語り合う時間を持てたらと思い、家族・仲間で会を企画しています。
+    
+    この会は「お葬式」ではなく、**恒平の人生をみんなで祝い、思い出を持ち寄り、つながり直すための時間**です。
+    
+    恒平が愛した、ワイワイとあたたかい雰囲気の中で、気軽にお越しいただけたら嬉しいです。
+    
+    **FROM RIEKO AIBA**
     """)
     
     st.divider()
     
+    # 開催概要
     st.markdown("""
-    ### 📢 このサイトの使い方
+    ### 🗓️ お別れ会【愛波恒平 Memorial Party】
+    
+    """)
+    
+    st.info("""
+    **📍 日時:** 2025年3月21日（土）16:30 - 20:00（出入り自由）  
+    ご都合のよい時間にお立ち寄りください。途中退席も問題ございません。
+    
+    **📍 場所:** [Bar Dunbar](https://maps.app.goo.gl/z5aMtCkMAv2z1wre9)  
+    目黒駅から徒歩約5〜6分
+    
+    **📍 会費:** 5,000円程度（人数次第で変動。決まり次第ご連絡します）
+    """)
+    
+    st.markdown("""
+    - 軽食とドリンクをご用意する、カジュアルな会です。
+    - お食事や飲み物はお持ち込みいただいても構いません。
+    - バーでは本格的なドリンクやカクテルもご注文いただけます。
+    - ご家族連れも歓迎です。少し顔を出すだけでも、ゆっくり語り合うのでも、自由にお過ごしください。
+    - 参加人数が多くなった場合は、混雑を避けるため、出入りしながら近隣のお店へ移動していただくこともあるかもしれません。
+    """)
+    
+    st.divider()
+    
+    # 参加登録
+    st.markdown("""
+    ### ✅ 参加登録（アンケート）
+    
+    人数把握と準備のため、以下のフォームにご回答ください。
+    """)
+    
+    st.link_button("📝 参加フォームに回答する", "https://forms.gle/7JngRqNhoskGkVoL6", use_container_width=True)
+    st.caption("なるべく早めのご回答にご協力ください。")
+    
+    st.divider()
+    
+    # 写真・動画・メッセージの共有（このサイトの使い方と統合）
+    st.markdown("""
+    ### 📷 写真・動画・メッセージの共有
+    
+    恒平の人生をお祝いしてみんなで共有するため、**このサイト**を用意しました。
+    
+    恒平との思い出の写真、動画、音楽、エピソード、メッセージなどをお寄せいただければ幸いです。
+    
+    この会に参加できない方からの投稿も歓迎しております。**当日、会場で共有させていただく予定です。**
+    
+    ---
+    
+    #### 📢 各タブの使い方
     
     **📸 Photo/Story** - 思い出の写真とエピソードを投稿  
     あなたの思い出を写真や文章で共有してください。写真なしでもOK！
@@ -826,8 +867,8 @@ with tab_info:
     - **Google Drive URL**: 大容量ファイルはリンクから視聴
     - **ファイルアップロード**: 小容量ファイル（200MB以下推奨）を直接アップロード
     
-    💡 **大容量動画の推奨方法**: YouTube（限定公開）にアップロード → URLを投稿
-    　（Streamlit上で直接再生できます）
+    💡 **大容量動画の推奨方法**: YouTube（限定公開）にアップロード → URLを投稿  
+    （Streamlit上で直接再生できます）
     
     **📺 Live** - イベント当日のライブ配信  
     当日来られない方も、会場の様子をリアルタイムで視聴できます。
@@ -840,13 +881,12 @@ with tab_info:
     ### 💡 みんなで参加しよう！
     
     **👍 Likeボタンで共感を伝えよう！**  
-    写真、ストーリー、音楽の投稿に「いいね」をつけて、  
-    みんなの思い出を応援してください。
+    写真、ストーリー、音楽の投稿に「いいね」をつけて、みんなの思い出を応援してください。
     
     一緒にKOHEI AIBAの記憶を祝いましょう 🎧✨
-    
-    ---
     """)
+    
+    st.divider()
     
     # 投稿統計
     st.header("📊 投稿統計")
@@ -883,18 +923,43 @@ with tab_info:
     
     st.divider()
     
+    # 愛波 Family Fund について
     st.markdown("""
     ### 💝 愛波 Family Fund について
     
-    **Fund** タブから、KOHEI AIBAが愛した子供たちを支援する基金に寄付できます。
+    今回はお香典という形ではいただいておりません。
+    
+    もしお気持ちをいただける場合は、恒平が愛した子どもたち2人のためのドネーションサイト（**愛波 Family Fund**）がございます。
     
     このファンドは、KOHEI AIBAが愛し、大切にしていた子供たちの未来のために使われます。  
     皆様の温かいご支援をお待ちしています。
     
-    🔗 寄付はFundタブから
+    **🔗 ドネーションは、Fundタブからお願いいたします。**
+    """)
     
-    ---
+    st.divider()
     
+    # 納骨について
+    st.markdown("""
+    ### 🌸 納骨について
+    
+    お別れ会の後、**3月23日（月）に家族で富士山麓の富士霊園に納骨**を予定しています。
+    """)
+    
+    st.divider()
+    
+    # 当日参加できない方へ
+    st.markdown("""
+    ### 📺 当日参加できない方へ
+    
+    当日現地に来られない方も、**Liveタブ**からリアルタイムで会場の様子をご覧いただけます。  
+    世界中どこからでも、KOHEI AIBAへの想いを共有しましょう 🌍✨
+    """)
+    
+    st.divider()
+    
+    # 投稿内容の修正・削除について
+    st.markdown("""
     ### ⚠️ 投稿内容の修正・削除について
     
     投稿した内容の修正や削除を行いたい場合は、直接、運営サイドにご連絡ください。
@@ -913,9 +978,10 @@ with tab_memory:
         key=f"memory_category_{st.session_state.memory_uploader_key}"
     )
     
-    # 説明のみ
+    # 説明
     mem_description = st.text_area(
-        "説明・エピソード",
+        "説明・タイトル",
+        placeholder="例：2023年のライブ映像、スタジオ録音など",
         key=f"memory_description_{st.session_state.memory_uploader_key}"
     )
     
@@ -1180,9 +1246,7 @@ with tab_photo:
     )
     
     if st.button("Post to Gallery", type="primary"):
-        st.write("DEBUG: Post button clicked!")  # デバッグ用
         if p_comment or uploaded_file:
-            st.write("DEBUG: Comment or file exists")  # デバッグ用
             # 画像をGCSにアップロード
             image_url = ""
             if uploaded_file is not None and USE_GCS:
@@ -1205,31 +1269,24 @@ with tab_photo:
             # データを更新
             updated_df = pd.concat([photo_df, new_row], ignore_index=True)
             
-            st.write(f"DEBUG: Before setting active_tab, current value = {st.session_state.active_tab}")  # デバッグ用
-            
             # タブを設定（保存の成功/失敗に関わらず）
             st.session_state.active_tab = 1  # Photo/Storyタブ
             st.session_state.photo_uploader_key += 1
             
-            st.write(f"DEBUG: After setting active_tab = {st.session_state.active_tab}")  # デバッグ用
-            
             # URLパラメータにタブを設定（st.rerun()でも保持される）
             try:
                 st.query_params.update({"tab": "1"})
-                st.write("DEBUG: query_params updated successfully")  # デバッグ用
-            except Exception as e:
-                st.write(f"DEBUG: query_params update failed: {e}")  # デバッグ用
+            except:
+                pass
             
             # 保存を試みる
             save_result = save_data("Photo", updated_df)
-            st.write(f"DEBUG: save_data result = {save_result}")  # デバッグ用
             
             if save_result:
                 st.success("投稿が完了しました！")
             else:
                 st.warning("投稿の保存に失敗しました（データは表示されますが永続化されません）")
             
-            st.write(f"DEBUG: Just before st.rerun(), active_tab = {st.session_state.active_tab}")  # デバッグ用
             st.cache_data.clear()
             st.rerun()
         else:
@@ -1561,4 +1618,4 @@ with tab_fund:
     st.link_button("Donate to Aiba Family Fund", "https://gofund.me/979e2078d")
 
 st.divider()
-st.caption("© 2026 愛波 Memorial Project Team")
+st.caption("© 2026 愛波恒平 Memorial Project Team")
