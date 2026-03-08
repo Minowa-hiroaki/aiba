@@ -59,9 +59,17 @@ except Exception as e:
 
 def get_data(worksheet_name):
     """データを読み込む（Google Sheets または セッション状態から）"""
+    # 直前の保存で更新されたデータがあればそちらを優先
+    if st.session_state.get(f'{worksheet_name}_dirty'):
+        st.session_state[f'{worksheet_name}_dirty'] = False
+        if f'{worksheet_name}_data' in st.session_state:
+            return st.session_state[f'{worksheet_name}_data']
+    
     if USE_GSHEETS:
         try:
-            return conn.read(worksheet=worksheet_name, ttl="1m")
+            data = conn.read(worksheet=worksheet_name, ttl="1m")
+            st.session_state[f'{worksheet_name}_data'] = data
+            return data
         except Exception:
             pass
     
@@ -72,9 +80,13 @@ def get_data(worksheet_name):
 
 def save_data(worksheet_name, data):
     """データを保存（Google Sheets または セッション状態へ）"""
+    # 常にセッション状態を更新（即座にUIへ反映するため）
+    st.session_state[f'{worksheet_name}_data'] = data
+    st.session_state[f'{worksheet_name}_dirty'] = True
+    
     if USE_GSHEETS:
         try:
-            result = conn.update(worksheet=worksheet_name, data=data)
+            conn.update(worksheet=worksheet_name, data=data)
             return True
         except Exception as e:
             import traceback
@@ -83,10 +95,13 @@ def save_data(worksheet_name, data):
             with st.expander("詳細なエラー情報"):
                 st.code(error_details)
             return False
-    else:
-        # セッション状態に保存
-        st.session_state[f'{worksheet_name}_data'] = data
-        return True
+    return True
+
+def _handle_like(worksheet, df, idx_val, current_likes):
+    """Likeボタンのコールバック（on_click用）"""
+    safe_likes = int(current_likes if pd.notna(current_likes) else 0)
+    df.loc[idx_val, 'likes'] = safe_likes + 1
+    save_data(worksheet, df)
 
 def upload_image_to_gcs(uploaded_file):
     """画像をGCSにアップロードして公開URLを返す"""
@@ -244,8 +259,8 @@ def render_large_file_uploader(key="large_uploader", signed_url=None, public_url
     """大容量ファイル用のカスタムアップローダー（Signed URL方式）"""
     
     # Signed URLが渡されている場合、それを埋め込む
-    signed_url_js = f"'{signed_url}'" if signed_url else 'null'
-    public_url_js = f"'{public_url}'" if public_url else 'null'
+    signed_url_js = json.dumps(signed_url) if signed_url else 'null'
+    public_url_js = json.dumps(public_url) if public_url else 'null'
     
     html_code = f"""
     <div style="padding: 20px; background-color: #0f172a; border: 2px dashed #334155; border-radius: 10px; text-align: center;">
@@ -645,7 +660,8 @@ if not st.session_state.user_name:
 st.markdown('<div id="page-top"></div>', unsafe_allow_html=True)
 
 st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🎧 愛波恒平 Memorial</h3>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align: center; color: #10b981; font-size: 0.9rem;'>User: {st.session_state.user_name}</p>", unsafe_allow_html=True)
+import html as _html
+st.markdown(f"<p style='text-align: center; color: #10b981; font-size: 0.9rem;'>User: {_html.escape(st.session_state.user_name)}</p>", unsafe_allow_html=True)
 
 # ログイン直後のスクロール制御（components.htmlを使用）
 if st.session_state.page_load_count == 0:
@@ -703,6 +719,9 @@ if st.session_state.page_load_count == 0:
     """
     components.html(scroll_html, height=0)
     st.session_state.page_load_count += 1
+else:
+    # ウィジェットツリーを安定させるためのプレースホルダー
+    components.html("<div></div>", height=0)
 
 tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st.tabs(["Info", "Photo/Story", "Music", "Memory", "Live", "Message", "Fund"])
 
@@ -865,17 +884,17 @@ with tab_info:
     
     with col1:
         photo_count = len(photo_df) if not photo_df.empty else 0
-        photo_likes = int(photo_df['likes'].sum()) if not photo_df.empty and 'likes' in photo_df.columns else 0
+        photo_likes = int(photo_df['likes'].fillna(0).sum()) if not photo_df.empty and 'likes' in photo_df.columns else 0
         st.metric("📸 Photo/Story", f"{photo_count}件", f"👍 {photo_likes}")
     
     with col2:
         music_count = len(music_df) if not music_df.empty else 0
-        music_likes = int(music_df['likes'].sum()) if not music_df.empty and 'likes' in music_df.columns else 0
+        music_likes = int(music_df['likes'].fillna(0).sum()) if not music_df.empty and 'likes' in music_df.columns else 0
         st.metric("🎵 Music", f"{music_count}件", f"👍 {music_likes}")
     
     with col3:
         memory_count = len(memory_df) if not memory_df.empty else 0
-        memory_likes = int(memory_df['likes'].sum()) if not memory_df.empty and 'likes' in memory_df.columns else 0
+        memory_likes = int(memory_df['likes'].fillna(0).sum()) if not memory_df.empty and 'likes' in memory_df.columns else 0
         st.metric("🎬 Memory", f"{memory_count}件", f"👍 {memory_likes}")
     
     with col4:
@@ -976,15 +995,6 @@ with tab_info:
 with tab_memory:
     st.header("🎬 Memory - 彼の記憶")
     
-    # アップロード完了メッセージを表示
-    if 'upload_message' in st.session_state:
-        msg_type, msg_text = st.session_state.upload_message
-        if msg_type == "success":
-            st.success(msg_text)
-        else:
-            st.warning(msg_text)
-        del st.session_state.upload_message
-    
     memory_df = get_data("Memory")
     
     st.subheader("📤 映像・音源をアップロード")
@@ -1072,7 +1082,7 @@ with tab_memory:
             if file_size_mb > 200:
                 st.error("⚠️ 200MBを超えるファイルはGoogle Driveのご利用を推奨します")
     
-    st.info("📌 注意：アップロード後、Info画面に移動することがありますが、問題なくアップロードできていることが多いです。Memoryタブで投稿前のアップロードを確認して、投稿するボタンを押してください。")
+    st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
     
     if st.button("投稿する", key="post_memory", type="primary"):
         if mem_description:
@@ -1124,11 +1134,10 @@ with tab_memory:
             
             # 保存
             if save_data("Memory", updated_df):
-                st.session_state.upload_message = ("success", "投稿が完了しました！")
+                st.success("✅ 投稿が完了しました！")
             else:
-                st.session_state.upload_message = ("warning", "投稿の保存に失敗しました")
+                st.warning("投稿の保存に失敗しました")
             
-            st.cache_data.clear()
             st.rerun()
         else:
             st.error("説明を入力してください")
@@ -1161,13 +1170,8 @@ with tab_memory:
                         st.markdown(f"### {icon} {row.get('category', '不明')}")
                         st.caption(f"投稿者: {row.get('user', '不明')}")
                     with col_like:
-                        if st.button(f"👍 {row.get('likes', 0)}", key=f"like_memory_{idx}", type="secondary"):
-                            memory_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
-                            
-                            if save_data("Memory", memory_df):
-                                pass
-                            
-                            st.rerun()
+                        st.button(f"👍 {row.get('likes', 0)}", key=f"like_memory_{idx}", type="secondary",
+                                  on_click=_handle_like, args=("Memory", memory_df, idx, row.get('likes', 0)))
                     
                     # 説明
                     st.write(row.get('description', ''))
@@ -1219,15 +1223,6 @@ with tab_memory:
 with tab_photo:
     st.subheader("📸 Share Photos & Stories")
     
-    # アップロード完了メッセージを表示
-    if 'upload_message' in st.session_state:
-        msg_type, msg_text = st.session_state.upload_message
-        if msg_type == "success":
-            st.success(msg_text)
-        else:
-            st.warning(msg_text)
-        del st.session_state.upload_message
-    
     photo_df = get_data("Photo")
     
     st.subheader("📝 思い出を投稿する (写真なしでもOK)")
@@ -1261,7 +1256,7 @@ with tab_photo:
         key=f"photo_comment_{st.session_state.photo_uploader_key}"
     )
     
-    st.info("📌 注意：アップロード後、Info画面に移動することがありますが、問題なくアップロードできていることが多いです。Photo/Storyタブで投稿前のアップロードを確認して、Post to Galleryしてください。")
+    st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
     
     if st.button("Post to Gallery", type="primary"):
         if p_comment or uploaded_file:
@@ -1292,13 +1287,11 @@ with tab_photo:
             # 保存を試みる
             save_result = save_data("Photo", updated_df)
             
-            # メッセージをsession_stateに保存
             if save_result:
-                st.session_state.upload_message = ("success", "投稿が完了しました！")
+                st.success("✅ 投稿が完了しました！")
             else:
-                st.session_state.upload_message = ("warning", "投稿の保存に失敗しました")
+                st.warning("投稿の保存に失敗しました")
             
-            st.cache_data.clear()
             st.rerun()
         else:
             st.error("エピソードを入力するか、写真を選んでください。")
@@ -1337,14 +1330,8 @@ with tab_photo:
                     # Likeボタン
                     col1, col2 = st.columns([1, 5])
                     with col1:
-                        if st.button(f"👍 {row.get('likes', 0)}", key=f"like_photo_{idx}", type="secondary"):
-                            # Likesを増やす
-                            photo_df.loc[idx, 'likes'] = int(row.get('likes', 0)) + 1
-                            
-                            if save_data("Photo", photo_df):
-                                pass
-                            
-                            st.rerun()
+                        st.button(f"👍 {row.get('likes', 0)}", key=f"like_photo_{idx}", type="secondary",
+                                  on_click=_handle_like, args=("Photo", photo_df, idx, row.get('likes', 0)))
                     
                     st.divider()
         else:
@@ -1355,15 +1342,6 @@ with tab_photo:
 # --- 5-4. Music ---
 with tab_music:
     st.subheader("🎵 Memorial Playlist")
-    
-    # アップロード完了メッセージを表示
-    if 'upload_message' in st.session_state:
-        msg_type, msg_text = st.session_state.upload_message
-        if msg_type == "success":
-            st.success(msg_text)
-        else:
-            st.warning(msg_text)
-        del st.session_state.upload_message
     
     music_df = get_data("Music")
     
@@ -1412,7 +1390,7 @@ with tab_music:
                 "KOHEI AIBAとの思い出を共有してください",
                 key=f"music_new_comment_{st.session_state.music_form_key}"
             )
-            st.info("📌 注意：入力後、Info画面に移動することがありますが、問題なく入力できていることが多いです。Musicタブで入力内容を確認して、エピソードを追加してください。")
+            st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
             if st.button("エピソードを追加", key=f"add_episode_{st.session_state.music_form_key}", type="primary"):
                 # 既存の曲情報を使って新しいエピソードを追加
                 new_row = pd.DataFrame([{
@@ -1428,11 +1406,10 @@ with tab_music:
                 st.session_state.music_form_key += 1
                 
                 if save_data("Music", updated_df):
-                    st.session_state.upload_message = ("success", "エピソードを追加しました！")
+                    st.success("✅ エピソードを追加しました！")
                 else:
-                    st.session_state.upload_message = ("warning", "保存に失敗しました")
+                    st.warning("保存に失敗しました")
                 
-                st.cache_data.clear()
                 st.rerun()
         else:
             # 【未登録の曲の場合】
@@ -1453,7 +1430,7 @@ with tab_music:
                 key=f"music_comment_{st.session_state.music_form_key}"
             )
             
-            st.info("📌 注意：入力後、Info画面に移動することがありますが、問題なく入力できていることが多いです。Musicタブで入力内容を確認して、プレイリストに追加してください。")
+            st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
             
             if st.button("プレイリストに追加", key=f"add_new_song_{st.session_state.music_form_key}", type="primary"):
                 new_row = pd.DataFrame([{
@@ -1469,11 +1446,10 @@ with tab_music:
                 st.session_state.music_form_key += 1
                 
                 if save_data("Music", updated_df):
-                    st.session_state.upload_message = ("success", "プレイリストに追加しました！")
+                    st.success("✅ プレイリストに追加しました！")
                 else:
-                    st.session_state.upload_message = ("warning", "保存に失敗しました")
+                    st.warning("保存に失敗しました")
                 
-                st.cache_data.clear()
                 st.rerun()
     
     # プレイリスト表示
@@ -1499,15 +1475,8 @@ with tab_music:
                     st.markdown(f"### 🎵 {song_name} / {artist_name}")
                 with col_like:
                     # 曲全体のLikeボタン
-                    if st.button(f"👍 {total_likes}", key=f"like_song_{song_name}", type="secondary"):
-                        # この曲の最初のエピソードのLikesを増やす
-                        first_idx = song_episodes.index[0]
-                        music_df.loc[first_idx, 'likes'] = int(song_episodes.iloc[0].get('likes', 0)) + 1
-                        
-                        if save_data("Music", music_df):
-                            pass
-                        
-                        st.rerun()
+                    st.button(f"👍 {total_likes}", key=f"like_song_{song_name}", type="secondary",
+                              on_click=_handle_like, args=("Music", music_df, song_episodes.index[0], song_episodes.iloc[0].get('likes', 0)))
                 
                 # ジャケット画像とエピソードを表示
                 artwork_url = song_row.get('artwork_url', '')
@@ -1541,15 +1510,6 @@ with tab_live:
 # --- 5-6. Message ---
 with tab_message:
     st.subheader("💌 Messages to Kids")
-    
-    # アップロード完了メッセージを表示
-    if 'upload_message' in st.session_state:
-        msg_type, msg_text = st.session_state.upload_message
-        if msg_type == "success":
-            st.success(msg_text)
-        else:
-            st.warning(msg_text)
-        del st.session_state.upload_message
     
     message_df = get_data("Message")
     
@@ -1585,7 +1545,7 @@ with tab_message:
         key=f"message_text_{st.session_state.message_form_key}"
     )
     
-    st.info("📌 注意：入力後、Info画面に移動することがありますが、問題なく入力できていることが多いです。Messageタブで入力内容を確認して、メッセージを送るボタンを押してください。")
+    st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
     
     if st.button("メッセージを送る", key=f"post_message_{st.session_state.message_form_key}", type="primary"):
         if msg_name and msg_text:
@@ -1600,14 +1560,13 @@ with tab_message:
             }])
             
             updated_df = pd.concat([message_df, new_row], ignore_index=True)
-            st.session_state.message_form_key += 1
             
             if save_data("Message", updated_df):
-                st.session_state.upload_message = ("success", "✅ メッセージを受け付けました。大切に保管します。温かいメッセージをありがとうございます。")
+                st.success("✅ メッセージを受け付けました。大切に保管します。温かいメッセージをありがとうございます。")
             else:
-                st.session_state.upload_message = ("warning", "保存に失敗しました")
+                st.warning("保存に失敗しました")
             
-            st.cache_data.clear()
+            st.session_state.message_form_key += 1
             st.rerun()
         else:
             st.error("名前とメッセージを入力してください")
@@ -1624,7 +1583,7 @@ with tab_fund:
     皆様の温かいご支援をお待ちしています。
     """)
     
-    st.link_button("Donate to Aiba Family Fund", "https://gofund.me/979e2078d")
+    st.link_button("Donate to Aiba Family Fund", "https://www.gofundme.com/f/honoring-kohei-by-supporting-kenzo-and-huga")
 
 st.divider()
 st.caption("© 2026 愛波恒平 Memorial Project Team")
