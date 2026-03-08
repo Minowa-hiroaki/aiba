@@ -1562,11 +1562,11 @@ with tab_message:
 with tab_fund:
     st.header("💝 Aiba Family Fund")
     
-    # GCSの画像を表示（モバイル対応）
-    try:
-        st.image("https://storage.googleapis.com/aiba-memorial-pthotos/images/fund_family.jpg", use_container_width=True)
-    except:
-        pass
+    # GCSの画像を表示（HTML imgタグで確実に表示）
+    st.markdown(
+        '<img src="https://storage.googleapis.com/aiba-memorial-pthotos/images/fund_family.jpg" style="width: 100%; border-radius: 10px; margin-bottom: 10px;" alt="Aiba Family">',
+        unsafe_allow_html=True
+    )
     
     st.markdown("""  
     今回はお香典という形ではいただいておりません。
