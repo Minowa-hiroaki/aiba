@@ -840,7 +840,8 @@ with tab_info:
     with col1:
         st.markdown("""
         **📺 Live** - イベント当日のライブ配信  
-        当日来られない方も、会場の様子をリアルタイムで視聴できます。
+        現在は、恒平の二人の息子が作ったトリビュート映像を公開中です。  
+        当日は会場からのライブ配信に切り替わります。
         """)
     with col2:
         st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
