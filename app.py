@@ -1472,8 +1472,7 @@ with tab_music:
                 # 曲名とLikeボタンを同じ行に表示
                 col_title, col_like = st.columns([5, 1])
                 with col_title:
-                    yt_query = urllib.parse.quote(f"{song_name} {artist_name}")
-                    st.markdown(f"### 🎵 [{song_name} / {artist_name}](https://www.youtube.com/results?search_query={yt_query})")
+                    st.markdown(f"### 🎵 {song_name} / {artist_name}")
                 with col_like:
                     # 曲全体のLikeボタン
                     st.button(f"👍 {total_likes}", key=f"like_song_{song_name}", type="secondary",
@@ -1491,6 +1490,10 @@ with tab_music:
                     else:
                         st.markdown("### 🎵")
                         st.caption("(ジャケット画像なし)")
+                    # YouTubeで聴くボタン
+                    yt_query = urllib.parse.quote(f"{song_name} {artist_name}")
+                    yt_url = f"https://www.youtube.com/results?search_query={yt_query}"
+                    st.link_button("▶️ YouTubeで聴く", yt_url)
                 
                 with col_right:
                     # エピソード表示
