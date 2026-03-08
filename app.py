@@ -59,30 +59,26 @@ except Exception as e:
 
 def get_data(worksheet_name):
     """データを読み込む（Google Sheets または セッション状態から）"""
-    # 直前の保存で更新されたデータがあればそちらを優先
-    if st.session_state.get(f'{worksheet_name}_dirty'):
-        st.session_state[f'{worksheet_name}_dirty'] = False
-        if f'{worksheet_name}_data' in st.session_state:
-            return st.session_state[f'{worksheet_name}_data']
+    key = f'{worksheet_name}_data'
+    # セッション状態に既にデータがあればそれを使う（最新の保存結果を含む）
+    if key in st.session_state and not st.session_state[key].empty:
+        return st.session_state[key]
     
+    # 初回のみ Google Sheets から読み込み、セッション状態に保存
     if USE_GSHEETS:
         try:
             data = conn.read(worksheet=worksheet_name, ttl="1m")
-            st.session_state[f'{worksheet_name}_data'] = data
+            st.session_state[key] = data
             return data
         except Exception:
             pass
     
-    # セッション状態から取得
-    if f'{worksheet_name}_data' not in st.session_state:
-        st.session_state[f'{worksheet_name}_data'] = pd.DataFrame()
-    return st.session_state[f'{worksheet_name}_data']
+    st.session_state[key] = pd.DataFrame()
+    return st.session_state[key]
 
 def save_data(worksheet_name, data):
-    """データを保存（Google Sheets または セッション状態へ）"""
-    # 常にセッション状態を更新（即座にUIへ反映するため）
+    """データを保存（Google Sheets および セッション状態へ）"""
     st.session_state[f'{worksheet_name}_data'] = data
-    st.session_state[f'{worksheet_name}_dirty'] = True
     
     if USE_GSHEETS:
         try:
@@ -97,8 +93,9 @@ def save_data(worksheet_name, data):
             return False
     return True
 
-def _handle_like(worksheet, df, idx_val, current_likes):
+def _handle_like(worksheet, idx_val, current_likes):
     """Likeボタンのコールバック（on_click用）"""
+    df = get_data(worksheet).copy()
     safe_likes = int(current_likes if pd.notna(current_likes) else 0)
     df.loc[idx_val, 'likes'] = safe_likes + 1
     save_data(worksheet, df)
@@ -1171,7 +1168,7 @@ with tab_memory:
                         st.caption(f"投稿者: {row.get('user', '不明')}")
                     with col_like:
                         st.button(f"👍 {row.get('likes', 0)}", key=f"like_memory_{idx}", type="secondary",
-                                  on_click=_handle_like, args=("Memory", memory_df, idx, row.get('likes', 0)))
+                                  on_click=_handle_like, args=("Memory", idx, row.get('likes', 0)))
                     
                     # 説明
                     st.write(row.get('description', ''))
@@ -1331,7 +1328,7 @@ with tab_photo:
                     col1, col2 = st.columns([1, 5])
                     with col1:
                         st.button(f"👍 {row.get('likes', 0)}", key=f"like_photo_{idx}", type="secondary",
-                                  on_click=_handle_like, args=("Photo", photo_df, idx, row.get('likes', 0)))
+                                  on_click=_handle_like, args=("Photo", idx, row.get('likes', 0)))
                     
                     st.divider()
         else:
@@ -1476,7 +1473,7 @@ with tab_music:
                 with col_like:
                     # 曲全体のLikeボタン
                     st.button(f"👍 {total_likes}", key=f"like_song_{song_name}", type="secondary",
-                              on_click=_handle_like, args=("Music", music_df, song_episodes.index[0], song_episodes.iloc[0].get('likes', 0)))
+                              on_click=_handle_like, args=("Music", song_episodes.index[0], song_episodes.iloc[0].get('likes', 0)))
                 
                 # ジャケット画像とエピソードを表示
                 artwork_url = song_row.get('artwork_url', '')
