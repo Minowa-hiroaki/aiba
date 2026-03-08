@@ -1562,9 +1562,9 @@ with tab_message:
 with tab_fund:
     st.header("💝 Aiba Family Fund")
     
-    # Google Driveの画像を表示（モバイル対応: try/exceptで代替表示）
+    # GCSの画像を表示（モバイル対応）
     try:
-        st.image("https://lh3.googleusercontent.com/d/1JpfJnMS3G01bTbZEvsbIdW40uIP2Xknf", use_container_width=True)
+        st.image("https://storage.googleapis.com/aiba-memorial-pthotos/images/fund_family.jpg", use_container_width=True)
     except:
         pass
     
