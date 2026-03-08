@@ -563,7 +563,7 @@ if 'uploaded_file_url' not in st.session_state:
 if not st.session_state.user_name:
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
     st.markdown("<h1>🎧 愛波恒平 Memorial</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='sub-text'>KOHEI AIBAを愛する仲間たちのための場所です。</p>", unsafe_allow_html=True)
+    st.markdown("<p class='sub-text'>KOHEIを愛する仲間たちのための場所です。</p>", unsafe_allow_html=True)
     
     # スライドショー
     slideshow_html = """
@@ -747,7 +747,8 @@ with tab_info:
     
     # 開催概要
     st.markdown("""
-    ### 🗓️ お別れ会【愛波恒平 Memorial Party】
+    ### 🗓️ Celebrating the Life of Kohei Aiba
+    **愛波恒平の人生を讃える会**
     
     """)
     
@@ -813,7 +814,7 @@ with tab_info:
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown("""
-        **🎵 Music** - KOHEI AIBAが愛した音楽、あなたとの思い出の曲  
+        **🎵 Music** - KOHEIが愛した音楽、あなたとの思い出の曲  
         曲とエピソードを投稿して、みんなで共有しましょう。
         """)
     with col2:
@@ -823,7 +824,7 @@ with tab_info:
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown("""
-        **🎬 Memory** - KOHEI AIBAの映像・音源を共有  
+        **🎬 Memory** - KOHEIの映像・音源を共有  
         - **YouTube URL** ⭐推奨: YouTube動画（限定公開OK）を埋め込み再生
         - **Google Drive URL**: 大容量ファイルはリンクから視聴
         - **ファイルアップロード**: 小容量ファイル（200MB以下推奨）を直接アップロード
@@ -849,7 +850,7 @@ with tab_info:
     with col1:
         st.markdown("""
         **💌 Message** - 恒平へのメッセージ  
-        KOHEI AIBAへ、動画やメッセージを送ることができます。
+        KOHEIへ、動画やメッセージを送ることができます。
         """)
     with col2:
         st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
@@ -862,7 +863,7 @@ with tab_info:
     **👍 Likeボタンで共感を伝えよう！**  
     写真、ストーリー、音楽の投稿に「いいね」をつけて、みんなの思い出を応援してください。
     
-    一緒にKOHEI AIBAの記憶を祝いましょう 🎧✨
+    一緒にKOHEIの記憶を祝いましょう 🎧✨
     """)
     
     st.divider()
@@ -898,7 +899,7 @@ with tab_info:
         message_count = len(message_df) if not message_df.empty else 0
         st.metric("💌 Message", f"{message_count}件", "")
     
-    st.caption("みんなの投稿で、KOHEI AIBAの記憶がより豊かになります ✨")
+    st.caption("みんなの投稿で、KOHEIの記憶がより豊かになります ✨")
     
     st.divider()
     
@@ -910,7 +911,7 @@ with tab_info:
     
     もしお気持ちをいただける場合は、恒平が愛した子どもたち2人のためのドネーションサイト（**愛波 Family Fund**）がございます。
     
-    このファンドは、KOHEI AIBAが愛し、大切にしていた子供たちの未来のために使われます。  
+    このファンドは、KOHEIが愛し、大切にしていた子供たちの未来のために使われます。  
     皆様の温かいご支援をお待ちしています。
     
     **🔗 ドネーションは、Fundタブからお願いいたします。**
@@ -922,7 +923,8 @@ with tab_info:
     st.markdown("""
     ### 🌸 納骨について
     
-    お別れ会の後、**3月23日（月）に家族で富士山麓の富士霊園に納骨**を予定しています。
+    お別れ会の後、納骨は家族で執り行う予定です。  
+    ご理解いただけますと幸いです。
     """)
     
     st.divider()
@@ -932,7 +934,7 @@ with tab_info:
     ### 📺 当日参加できない方へ
     
     当日現地に来られない方も、**Liveタブ**からリアルタイムで会場の様子をご覧いただけます。  
-    世界中どこからでも、KOHEI AIBAへの想いを共有しましょう 🌍✨
+    世界中どこからでも、KOHEIへの想いを共有しましょう 🌍✨
     """)
     
     st.divider()
@@ -941,7 +943,8 @@ with tab_info:
     st.markdown("""
     ### ⚠️ 投稿内容の修正・削除について
     
-    投稿した内容の修正や削除を行いたい場合は、直接、運営サイドにご連絡ください。
+    投稿した内容の修正や削除を行いたい場合は、運営サイドまでご連絡ください。  
+    📧 kohei_memorial_project_team@yahoo.co.jp
     """)
     
     # 技術情報（管理者向け）
@@ -1249,7 +1252,7 @@ with tab_photo:
             st.info("📌 注意：現在、画像はプレビューのみで、投稿後は保存されません。コメントのみが保存されます。")
     
     p_comment = st.text_area(
-        "KOHEI AIBAとの思い出 (Story)",
+        "KOHEIとの思い出 (Story)",
         key=f"photo_comment_{st.session_state.photo_uploader_key}"
     )
     
@@ -1384,7 +1387,7 @@ with tab_music:
             # 追加エピソードの投稿
             st.subheader("➕ この曲にあなたのエピソードを追加")
             new_comment = st.text_area(
-                "KOHEI AIBAとの思い出を共有してください",
+                "KOHEIとの思い出を共有してください",
                 key=f"music_new_comment_{st.session_state.music_form_key}"
             )
             st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
@@ -1423,7 +1426,7 @@ with tab_music:
             
             # エピソード入力
             m_comment = st.text_area(
-                "この曲にまつわるKOHEI AIBAとのエピソード",
+                "この曲にまつわるKOHEIとのエピソード",
                 key=f"music_comment_{st.session_state.music_form_key}"
             )
             
@@ -1506,11 +1509,11 @@ with tab_live:
 
 # --- 5-6. Message ---
 with tab_message:
-    st.subheader("💌 Messages to Kids")
+    st.subheader("💌 Message to Kohei")
     
     message_df = get_data("Message")
     
-    st.info("💝 KOHEI AIBAへの想いやメッセージを送ることができます。投稿されたメッセージは運営が大切に保管します。")
+    st.info("💝 KOHEIへの想いやメッセージを送ることができます。投稿されたメッセージは運営が大切に保管します。")
     
     st.subheader("📝 恒平へのメッセージを送る")
     
@@ -1576,7 +1579,7 @@ with tab_fund:
     st.image("https://lh3.googleusercontent.com/d/1JpfJnMS3G01bTbZEvsbIdW40uIP2Xknf", use_container_width=True)
     
     st.markdown("""  
-    KOHEI AIBAが愛し、大切にしていた子供たちの未来のために。  
+    KOHEIが愛し、大切にしていた子供たちの未来のために。  
     皆様の温かいご支援をお待ちしています。
     """)
     
