@@ -1504,8 +1504,15 @@ with tab_music:
 # --- 5-5. Live ---
 with tab_live:
     st.header("🎧 Live DJ & Streaming")
-    st.info("当日はストリーミング配信を予定しています。DJ写真は準備中です。")
-    st.markdown("### 📺 配信はイベント当日にこちらで公開されます")
+    st.info("当日はライブ配信を予定しています。それまでは、恒平の息子たちが編集した映像をお楽しみください。")
+    
+    st.markdown("### 🎬 KOHEIの思い出 - by Kenzo & Huga")
+    st.components.v1.iframe(
+        "https://www.youtube.com/embed/IsA_7ga27dc",
+        height=400,
+    )
+    
+    st.markdown("### 📺 ライブ配信は当日こちらで公開されます")
 
 # --- 5-6. Message ---
 with tab_message:
