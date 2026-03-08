@@ -927,6 +927,31 @@ with tab_info:
     
     投稿した内容の修正や削除を行いたい場合は、直接、運営サイドにご連絡ください。
     """)
+    
+    # 技術情報（管理者向け）
+    with st.expander("🔧 技術情報（管理者向け）"):
+        if USE_GCS:
+            try:
+                bucket_location = gcs_bucket.location
+                st.info(f"📍 GCS バケットリージョン: **{bucket_location}**")
+                
+                # リージョン別の推奨メッセージ
+                if bucket_location in ['ASIA-NORTHEAST1', 'ASIA-NORTHEAST2']:
+                    st.success("✅ 日本リージョンです。アップロード速度は最適です。")
+                elif bucket_location.startswith('ASIA'):
+                    st.warning("⚠️ アジアリージョンですが、日本ではありません。日本リージョン（ASIA-NORTHEAST1）への移行を検討してください。")
+                elif bucket_location.startswith('US'):
+                    st.error("❌ 米国リージョンです。日本からのアップロードが遅い可能性があります。日本リージョン（ASIA-NORTHEAST1）への移行を強く推奨します。")
+                elif bucket_location.startswith('EU'):
+                    st.error("❌ 欧州リージョンです。日本からのアップロードが遅い可能性があります。日本リージョン（ASIA-NORTHEAST1）への移行を強く推奨します。")
+                else:
+                    st.info(f"リージョン: {bucket_location}")
+                
+                st.caption("💡 リージョンが日本以外の場合、新しい日本リージョンのバケットを作成することでアップロード速度が大幅に改善されます。")
+            except Exception as e:
+                st.warning(f"バケット情報の取得に失敗しました: {str(e)}")
+        else:
+            st.info("GCSは使用されていません。")
 
 # --- 5-2. Memory ---
 with tab_memory:
