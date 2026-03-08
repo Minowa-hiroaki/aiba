@@ -538,6 +538,14 @@ st.markdown("""
         color: #1e3a5f !important;
         font-weight: 600 !important;
     }
+    /* Fund タブの余白を詰める */
+    .fund-section div[data-testid="stMarkdown"] {
+        margin-bottom: 0 !important;
+        padding: 0 !important;
+    }
+    .fund-section div[data-testid="stVerticalBlock"] > div {
+        gap: 0 !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1561,23 +1569,15 @@ with tab_message:
 # --- 5-7. Fund ---
 with tab_fund:
     st.header("💝 Aiba Family Fund")
-    
-    # GCSの画像を表示（HTML imgタグで確実に表示）
-    st.markdown(
-        '<img src="https://storage.googleapis.com/aiba-memorial-pthotos/images/fund_family.jpg" style="width: 100%; border-radius: 10px; margin-bottom: 10px;" alt="Aiba Family">',
-        unsafe_allow_html=True
-    )
-    
-    st.markdown("""  
+    st.image("https://storage.googleapis.com/aiba-memorial-pthotos/images/fund_family.png", use_container_width=True)
+    st.markdown("""
     今回はお香典という形ではいただいておりません。
-    
+
     もしお気持ちをいただける場合は、恒平が愛した子どもたち2人のためのドネーションサイトがあります。  
     よろしければそちらへご寄付をお願いいたします。
     """)
-    
     st.link_button("Donate to Aiba Family Fund", "https://www.gofundme.com/f/honoring-kohei-by-supporting-kenzo-and-huga")
-    
-    st.markdown("""  
+    st.markdown("""
     - このページは子どもたちに全て資金がいきます。
     - 恒平が信頼した子どもたちの叔母にあたる愛波理恵子と橋本友香が共同管理をする基金です。
     """)
