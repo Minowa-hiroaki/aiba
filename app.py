@@ -439,7 +439,7 @@ st.markdown("""
     h1 { margin-bottom: 5px !important; text-align: center; color: #1e3a5f !important; }
     .sub-text { margin-bottom: 25px !important; color: #2c5282; font-size: 1.1rem; text-align: center; }
     
-    /* 入力フィールドのスタイル - 白い背景、暗い文字 */
+    /* 入力フィールドのスタイル - 白い背景、はっきりした黒文字 */
     input, textarea, 
     div[data-baseweb="input"] input,
     div[data-baseweb="textarea"] textarea,
@@ -448,19 +448,20 @@ st.markdown("""
     .stTextInput > div > div > input,
     .stTextArea > div > div > textarea {
         background-color: #ffffff !important; 
-        color: #1e3a5f !important;
-        caret-color: #1e3a5f !important;
-        -webkit-text-fill-color: #1e3a5f !important;
+        color: #111111 !important;
+        caret-color: #111111 !important;
+        -webkit-text-fill-color: #111111 !important;
         border: 2px solid #7cb3e9 !important; 
         border-radius: 10px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
     }
     
     /* より具体的な入力フィールドの色設定 */
     [data-testid="stTextInput"] input,
     [data-testid="stTextArea"] textarea {
-        color: #1e3a5f !important;
-        -webkit-text-fill-color: #1e3a5f !important;
+        color: #111111 !important;
+        -webkit-text-fill-color: #111111 !important;
         background-color: #ffffff !important;
     }
     
@@ -468,8 +469,8 @@ st.markdown("""
     [data-testid="stTextInput"] input:focus,
     [data-testid="stTextArea"] textarea:focus,
     input:focus, textarea:focus {
-        color: #1e3a5f !important;
-        -webkit-text-fill-color: #1e3a5f !important;
+        color: #111111 !important;
+        -webkit-text-fill-color: #111111 !important;
         background-color: #ffffff !important;
         border-color: #4a90e2 !important;
     }
@@ -481,15 +482,15 @@ st.markdown("""
     textarea:-webkit-autofill,
     textarea:-webkit-autofill:hover,
     textarea:-webkit-autofill:focus {
-        -webkit-text-fill-color: #1e3a5f !important;
+        -webkit-text-fill-color: #111111 !important;
         -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
         background-color: #ffffff !important;
-        color: #1e3a5f !important;
+        color: #111111 !important;
     }
     
     /* プレースホルダーのスタイル */
     input::placeholder, textarea::placeholder {
-        color: #94a3b8 !important;
+        color: #888888 !important;
         opacity: 1 !important;
     }
     
@@ -642,8 +643,15 @@ if not st.session_state.user_name:
     
     components.html(slideshow_html, height=450)
     
+    st.markdown("""
+    <p style='text-align: center; color: #1e3a5f; font-size: 1.05rem; margin: 10px 0 5px 0; line-height: 1.7; font-weight: 500;'>
+        ここは恒平を愛する仲間たちが写真や思い出を共有する場所です。<br>
+        あなたのお名前を教えてください。投稿やメッセージにあなたの名前が添えられます。
+    </p>
+    """, unsafe_allow_html=True)
+    
     with st.form("login_form"):
-        name_input = st.text_input("お名前を入力してください (Your Name)", placeholder="Enter your name here...")
+        name_input = st.text_input("お名前 (Your Name)", placeholder="Enter your name here...")
         submitted = st.form_submit_button("ENTER SITE", type="primary")
         
         if submitted and name_input:
