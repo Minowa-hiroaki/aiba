@@ -814,7 +814,7 @@ with tab_info:
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown("""
-        **🎵 Music** - KOHEIが愛した音楽、あなたとの思い出の曲  
+        **🎵 Music** - 恒平が愛した音楽、あなたとの思い出の曲  
         曲とエピソードを投稿して、みんなで共有しましょう。
         """)
     with col2:
@@ -824,7 +824,7 @@ with tab_info:
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown("""
-        **🎬 Memory** - KOHEIの映像・音源を共有  
+        **🎬 Memory** - 恒平の映像・音源を共有  
         - **YouTube URL** ⭐推奨: YouTube動画（限定公開OK）を埋め込み再生
         - **Google Drive URL**: 大容量ファイルはリンクから視聴
         - **ファイルアップロード**: 小容量ファイル（200MB以下推奨）を直接アップロード
@@ -851,7 +851,7 @@ with tab_info:
     with col1:
         st.markdown("""
         **💌 Message** - 恒平へのメッセージ  
-        KOHEIへ、動画やメッセージを送ることができます。
+        恒平へ、動画やメッセージを送ることができます。
         """)
     with col2:
         st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
@@ -864,7 +864,7 @@ with tab_info:
     **👍 Likeボタンで共感を伝えよう！**  
     写真、ストーリー、音楽の投稿に「いいね」をつけて、みんなの思い出を応援してください。
     
-    一緒にKOHEIの記憶を祝いましょう 🎧✨
+    一緒に恒平の記憶を祝いましょう 🎧✨
     """)
     
     st.divider()
@@ -912,7 +912,7 @@ with tab_info:
     
     もしお気持ちをいただける場合は、恒平が愛した子どもたち2人のためのドネーションサイト（**愛波 Family Fund**）がございます。
     
-    このファンドは、KOHEIが愛し、大切にしていた子供たちの未来のために使われます。  
+    このファンドは、恒平が愛し、大切にしていた子供たちの未来のために使われます。  
     皆様の温かいご支援をお待ちしています。
     
     **🔗 ドネーションは、Fundタブからお願いいたします。**
@@ -1209,7 +1209,7 @@ with tab_photo:
             st.info("📌 注意：現在、画像はプレビューのみで、投稿後は保存されません。コメントのみが保存されます。")
     
     p_comment = st.text_area(
-        "KOHEIとの思い出 (Story)",
+        "恒平との思い出 (Story)",
         key=f"photo_comment_{st.session_state.photo_uploader_key}"
     )
     
@@ -1344,7 +1344,7 @@ with tab_music:
             # 追加エピソードの投稿
             st.subheader("➕ この曲にあなたのエピソードを追加")
             new_comment = st.text_area(
-                "KOHEIとの思い出を共有してください",
+                "恒平との思い出を共有してください",
                 key=f"music_new_comment_{st.session_state.music_form_key}"
             )
             st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
@@ -1383,7 +1383,7 @@ with tab_music:
             
             # エピソード入力
             m_comment = st.text_area(
-                "この曲にまつわるKOHEIとのエピソード",
+                "この曲にまつわる恒平とのエピソード",
                 key=f"music_comment_{st.session_state.music_form_key}"
             )
             
@@ -1481,7 +1481,7 @@ with tab_message:
     
     message_df = get_data("Message")
     
-    st.info("💝 KOHEIへの想いやメッセージを送ることができます。投稿されたメッセージは運営が大切に保管します。")
+    st.info("💝 恒平への想いやメッセージを送ることができます。投稿されたメッセージは運営が大切に保管します。")
     
     st.subheader("📝 恒平へのメッセージを送る")
     
