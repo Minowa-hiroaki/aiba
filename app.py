@@ -14,8 +14,8 @@ import json
 
 # --- 1. ページ基本設定 ---
 st.set_page_config(
-    page_title="AIBA Memorial Party",
-    page_icon="🎧",
+    page_title="Celebrating the Life of Kohei Aiba",
+    page_icon="🕊️",
     layout="centered"
 )
 
@@ -563,8 +563,8 @@ if 'uploaded_file_url' not in st.session_state:
 
 if not st.session_state.user_name:
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h1>🎧 愛波恒平 Memorial</h1>", unsafe_allow_html=True)
-    st.markdown("<p class='sub-text'>KOHEIを愛する仲間たちのための場所です。</p>", unsafe_allow_html=True)
+    st.markdown("<h1>🕊️ Celebrating the Life of Kohei Aiba</h1>", unsafe_allow_html=True)
+    st.markdown("<p class='sub-text'>愛波恒平の人生を みんなでお祝いする会</p>", unsafe_allow_html=True)
     
     # スライドショー
     slideshow_html = """
@@ -664,7 +664,7 @@ if not st.session_state.user_name:
 # ページトップのアンカー
 st.markdown('<div id="page-top"></div>', unsafe_allow_html=True)
 
-st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🎧 愛波恒平 Memorial</h3>", unsafe_allow_html=True)
+st.markdown(f"<h3 style='text-align: center; margin-bottom: 5px;'>🕊️ Celebrating the Life of Kohei Aiba</h3>", unsafe_allow_html=True)
 import html as _html
 st.markdown(f"<p style='text-align: center; color: #10b981; font-size: 0.9rem;'>User: {_html.escape(st.session_state.user_name)}</p>", unsafe_allow_html=True)
 
@@ -755,8 +755,8 @@ with tab_info:
     
     # 開催概要
     st.markdown("""
-    ### 🗓️ Celebrating the Life of Kohei Aiba
-    **愛波恒平の人生を讃える会**
+    ### �️ Celebrating the Life of Kohei Aiba
+    **愛波恒平の人生を  みんなでお祝いする会**
     
     """)
     
@@ -848,7 +848,7 @@ with tab_info:
     with col1:
         st.markdown("""
         **📺 Live** - イベント当日のライブ配信  
-        現在は、恒平の二人の息子が作ったトリビュート映像を公開中です。  
+        現在は、恒平の長男Kenzoくんが葬儀のために作成した映像を公開中です。  
         当日は会場からのライブ配信に切り替わります。
         """)
     with col2:
@@ -1190,31 +1190,42 @@ with tab_photo:
     
     photo_df = get_data("Photo")
     
-    st.subheader("📝 思い出を投稿する (写真なしでもOK)")
-    # ファイル選択ボタンをここに配置
-    uploaded_file = st.file_uploader(
-        "写真をえらぶ (Select Photo)", 
-        type=['jpg', 'png', 'jpeg'],
-        key=f"photo_uploader_{st.session_state.photo_uploader_key}"
+    st.subheader("📝 思い出を投稿する")
+    
+    # 投稿タイプ選択
+    post_type = st.radio(
+        "投稿タイプ",
+        ["📸 写真付きエピソード", "✏️ エピソードのみ（写真なし）"],
+        horizontal=True,
+        key=f"photo_post_type_{st.session_state.photo_uploader_key}"
     )
     
-    # アップロードされた画像のプレビュー
-    if uploaded_file is not None:
-        # EXIF情報を元に正しい向きで表示
-        try:
-            from PIL import ImageOps
-            preview_image = Image.open(uploaded_file)
-            preview_image = ImageOps.exif_transpose(preview_image)
-            st.image(preview_image, caption="アップロード予定の写真", use_container_width=True)
-            uploaded_file.seek(0)  # ファイルポインタを先頭に戻す
-        except:
-            st.image(uploaded_file, caption="アップロード予定の写真", use_container_width=True)
-            uploaded_file.seek(0)
+    uploaded_file = None
+    if post_type == "📸 写真付きエピソード":
+        # ファイル選択ボタンをここに配置
+        uploaded_file = st.file_uploader(
+            "写真をえらぶ (Select Photo)", 
+            type=['jpg', 'png', 'jpeg'],
+            key=f"photo_uploader_{st.session_state.photo_uploader_key}"
+        )
         
-        if USE_GCS:
-            st.success("✅ 画像は永続的に保存されます")
-        else:
-            st.info("📌 注意：現在、画像はプレビューのみで、投稿後は保存されません。コメントのみが保存されます。")
+        # アップロードされた画像のプレビュー
+        if uploaded_file is not None:
+            # EXIF情報を元に正しい向きで表示
+            try:
+                from PIL import ImageOps
+                preview_image = Image.open(uploaded_file)
+                preview_image = ImageOps.exif_transpose(preview_image)
+                st.image(preview_image, caption="アップロード予定の写真", use_container_width=True)
+                uploaded_file.seek(0)  # ファイルポインタを先頭に戻す
+            except:
+                st.image(uploaded_file, caption="アップロード予定の写真", use_container_width=True)
+                uploaded_file.seek(0)
+            
+            if USE_GCS:
+                st.success("✅ 画像は永続的に保存されます")
+            else:
+                st.info("📌 注意：現在、画像はプレビューのみで、投稿後は保存されません。コメントのみが保存されます。")
     
     p_comment = st.text_area(
         "恒平との思い出 (Story)",
@@ -1473,9 +1484,9 @@ with tab_music:
 # --- 5-5. Live ---
 with tab_live:
     st.header("🎧 Live DJ & Streaming")
-    st.info("当日はライブ配信を予定しています。それまでは、恒平の息子たちが編集した映像をお楽しみください。")
+    st.info("当日はライブ配信を予定しています。それまでは、恒平の長男Kenzoくんが葬儀のために作成した映像をお楽しみください。")
     
-    st.markdown("### 🎬 KOHEIの思い出 - by Kenzo & Huga")
+    st.markdown("### 🎬 KOHEIの思い出 - by Kenzo")
     st.components.v1.iframe(
         "https://www.youtube.com/embed/IsA_7ga27dc",
         height=400,
@@ -1551,15 +1562,25 @@ with tab_message:
 with tab_fund:
     st.header("💝 Aiba Family Fund")
     
-    # Google Driveの画像を表示（ファイルID: 1JpfJnMS3G01bTbZEvsbIdW40uIP2Xknf）
-    st.image("https://lh3.googleusercontent.com/d/1JpfJnMS3G01bTbZEvsbIdW40uIP2Xknf", use_container_width=True)
+    # Google Driveの画像を表示（モバイル対応: try/exceptで代替表示）
+    try:
+        st.image("https://lh3.googleusercontent.com/d/1JpfJnMS3G01bTbZEvsbIdW40uIP2Xknf", use_container_width=True)
+    except:
+        pass
     
     st.markdown("""  
-    KOHEIが愛し、大切にしていた子供たちの未来のために。  
-    皆様の温かいご支援をお待ちしています。
+    今回はお香典という形ではいただいておりません。
+    
+    もしお気持ちをいただける場合は、恒平が愛した子どもたち2人のためのドネーションサイトがあります。  
+    よろしければそちらへご寄付をお願いいたします。
     """)
     
     st.link_button("Donate to Aiba Family Fund", "https://www.gofundme.com/f/honoring-kohei-by-supporting-kenzo-and-huga")
+    
+    st.markdown("""  
+    - このページは子どもたちに全て資金がいきます。
+    - 恒平が信頼した子どもたちの叔母にあたる愛波理恵子と橋本友香が共同管理をする基金です。
+    """)
 
 st.divider()
-st.caption("© 2026 愛波恒平 Memorial Project Team")
+st.caption("© 2026 Celebrating the Life of Kohei Aiba Project Team")
