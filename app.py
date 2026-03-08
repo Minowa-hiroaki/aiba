@@ -946,50 +946,6 @@ with tab_info:
     投稿した内容の修正や削除を行いたい場合は、運営サイドまでご連絡ください。  
     📧 kohei_memorial_project_team@yahoo.co.jp
     """)
-    
-    # 技術情報（管理者向け）
-    with st.expander("🔧 技術情報（管理者向け）"):
-        if USE_GCS:
-            try:
-                # バケット情報を再取得
-                gcs_bucket.reload()
-                bucket_location = gcs_bucket.location
-                
-                if bucket_location is None or bucket_location == "None":
-                    st.warning("⚠️ バケットリージョン情報を取得できませんでした。")
-                    st.info("**考えられる原因:**")
-                    st.markdown("""
-                    - バケットが存在しない、または権限が不足している
-                    - マルチリージョンバケット（自動的に最適なリージョンを選択）
-                    - バケット設定の問題
-                    
-                    **確認方法:**
-                    1. Google Cloud Consoleにアクセス
-                    2. Cloud Storage → バケット一覧を確認
-                    3. バケット名をクリック → 「構成」タブでリージョンを確認
-                    """)
-                else:
-                    st.info(f"📍 GCS バケットリージョン: **{bucket_location}**")
-                    
-                    # リージョン別の推奨メッセージ
-                    location_upper = bucket_location.upper()
-                    if location_upper in ['ASIA-NORTHEAST1', 'ASIA-NORTHEAST2']:
-                        st.success("✅ 日本リージョンです。アップロード速度は最適です。")
-                    elif location_upper.startswith('ASIA'):
-                        st.warning("⚠️ アジアリージョンですが、日本ではありません。日本リージョン（ASIA-NORTHEAST1）への移行を検討してください。")
-                    elif location_upper.startswith('US'):
-                        st.error("❌ 米国リージョンです。日本からのアップロードが遅い可能性があります。日本リージョン（ASIA-NORTHEAST1）への移行を強く推奨します。")
-                    elif location_upper.startswith('EU'):
-                        st.error("❌ 欧州リージョンです。日本からのアップロードが遅い可能性があります。日本リージョン（ASIA-NORTHEAST1）への移行を強く推奨します。")
-                    else:
-                        st.info(f"リージョン: {bucket_location}")
-                    
-                    st.caption("💡 リージョンが日本以外の場合、新しい日本リージョンのバケットを作成することでアップロード速度が大幅に改善されます。")
-            except Exception as e:
-                st.error(f"❌ バケット情報の取得エラー: {str(e)}")
-                st.info("Google Cloud Consoleで直接バケット設定を確認してください。")
-        else:
-            st.info("GCSは使用されていません。")
 
 # --- 5-2. Memory ---
 with tab_memory:
