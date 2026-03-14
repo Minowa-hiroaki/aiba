@@ -1075,9 +1075,9 @@ with tab_memory:
                         unique_filename = f"memory/{uuid.uuid4()}.{file_extension}"
                         
                         # GCSにアップロード
-                        blob = gcs_bucket.blob(unique_filename)
-                        blob.upload_from_file(uploaded_file_mem, content_type=uploaded_file_mem.type)
-                        file_url_mem = blob.public_url
+                        mem_blob = gcs_bucket.blob(unique_filename)
+                        mem_blob.upload_from_file(uploaded_file_mem, content_type=uploaded_file_mem.type)
+                        file_url_mem = mem_blob.public_url
                         st.success("✅ アップロード完了")
                 elif not USE_GCS:
                     st.error("⚠️ ファイルアップロード機能が利用できません")
@@ -1208,67 +1208,105 @@ with tab_photo:
         key=f"photo_post_type_{st.session_state.photo_uploader_key}"
     )
     
-    uploaded_file = None
+    uploaded_files = []
     if post_type == "📸 写真付きエピソード":
-        # ファイル選択ボタンをここに配置
-        uploaded_file = st.file_uploader(
-            "写真をえらぶ (Select Photo)", 
+        # 複数ファイル選択対応
+        uploaded_files = st.file_uploader(
+            "写真をえらぶ（複数選択可） (Select Photos)", 
             type=['jpg', 'png', 'jpeg'],
+            accept_multiple_files=True,
             key=f"photo_uploader_{st.session_state.photo_uploader_key}"
         )
         
-        # アップロードされた画像のプレビュー
-        if uploaded_file is not None:
-            # EXIF情報を元に正しい向きで表示
-            try:
-                from PIL import ImageOps
-                preview_image = Image.open(uploaded_file)
-                preview_image = ImageOps.exif_transpose(preview_image)
-                st.image(preview_image, caption="アップロード予定の写真", use_container_width=True)
-                uploaded_file.seek(0)  # ファイルポインタを先頭に戻す
-            except:
-                st.image(uploaded_file, caption="アップロード予定の写真", use_container_width=True)
-                uploaded_file.seek(0)
-            
+        # アップロードされた画像のプレビューと個別コメント
+        if uploaded_files:
             if USE_GCS:
-                st.success("✅ 画像は永続的に保存されます")
+                st.success(f"✅ {len(uploaded_files)}枚の画像が選択されました。画像は永続的に保存されます")
             else:
                 st.info("📌 注意：現在、画像はプレビューのみで、投稿後は保存されません。コメントのみが保存されます。")
+            
+            st.markdown("---")
+            st.markdown("**各写真にコメントを入力できます（任意）：**")
+            
+            for i, uf in enumerate(uploaded_files):
+                with st.container():
+                    col_img, col_comment = st.columns([1, 1])
+                    with col_img:
+                        try:
+                            from PIL import ImageOps
+                            preview_image = Image.open(uf)
+                            preview_image = ImageOps.exif_transpose(preview_image)
+                            st.image(preview_image, caption=f"写真 {i+1}", use_container_width=True)
+                            uf.seek(0)
+                        except:
+                            st.image(uf, caption=f"写真 {i+1}", use_container_width=True)
+                            uf.seek(0)
+                    with col_comment:
+                        st.text_area(
+                            f"写真 {i+1} のコメント（任意）",
+                            key=f"photo_each_comment_{st.session_state.photo_uploader_key}_{i}",
+                            height=120,
+                        )
+                    st.markdown("")
     
-    p_comment = st.text_area(
-        "恒平との思い出 (Story)",
-        key=f"photo_comment_{st.session_state.photo_uploader_key}"
-    )
+    # エピソードのみの場合、または共通コメント用
+    if post_type == "✏️ エピソードのみ（写真なし）":
+        p_comment = st.text_area(
+            "恒平との思い出 (Story)",
+            key=f"photo_comment_{st.session_state.photo_uploader_key}"
+        )
+    else:
+        p_comment = None
     
     st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
     
     if st.button("Post to Gallery", type="primary"):
-        if p_comment or uploaded_file:
-            # 画像をGCSにアップロード
-            image_url = ""
-            if uploaded_file is not None and USE_GCS:
-                with st.spinner("画像をアップロード中..."):
-                    image_url = upload_image_to_gcs(uploaded_file)
-                    if image_url:
-                        st.success("画像のアップロードが完了しました！")
-                    else:
-                        st.warning("画像のアップロードに失敗しました。コメントのみ投稿します。")
-            elif uploaded_file is not None and not USE_GCS:
-                st.info("📌 GCS未設定のため、画像は保存されません。コメントのみ投稿します。")
+        if post_type == "📸 写真付きエピソード" and uploaded_files:
+            # 複数写真を一括アップロード
+            new_rows = []
+            with st.spinner(f"{len(uploaded_files)}枚の画像をアップロード中..."):
+                for i, uf in enumerate(uploaded_files):
+                    image_url = ""
+                    if USE_GCS:
+                        image_url = upload_image_to_gcs(uf)
+                    
+                    # 各写真の個別コメントを取得
+                    each_comment = st.session_state.get(
+                        f"photo_each_comment_{st.session_state.photo_uploader_key}_{i}", ""
+                    )
+                    
+                    new_rows.append({
+                        "user": st.session_state.user_name,
+                        "image_url": image_url if image_url else "",
+                        "comment": each_comment if each_comment else "(画像のみ)",
+                        "likes": 0
+                    })
             
+            new_df = pd.DataFrame(new_rows)
+            updated_df = pd.concat([photo_df, new_df], ignore_index=True)
+            
+            st.session_state.photo_uploader_key += 1
+            
+            save_result = save_data("Photo", updated_df)
+            
+            if save_result:
+                st.success(f"✅ {len(uploaded_files)}枚の写真を投稿しました！")
+            else:
+                st.warning("投稿の保存に失敗しました")
+            
+            st.rerun()
+        elif post_type == "✏️ エピソードのみ（写真なし）" and p_comment:
             new_row = pd.DataFrame([{
                 "user": st.session_state.user_name, 
-                "image_url": image_url if image_url else "",
-                "comment": p_comment if p_comment else "(画像のみ)", 
+                "image_url": "",
+                "comment": p_comment, 
                 "likes": 0
             }])
             
-            # データを更新
             updated_df = pd.concat([photo_df, new_row], ignore_index=True)
             
             st.session_state.photo_uploader_key += 1
             
-            # 保存を試みる
             save_result = save_data("Photo", updated_df)
             
             if save_result:
