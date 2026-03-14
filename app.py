@@ -100,6 +100,49 @@ def _handle_like(worksheet, idx_val, current_likes):
     df.loc[idx_val, 'likes'] = safe_likes + 1
     save_data(worksheet, df)
 
+def _post_comment(target_type, target_idx, comment_key):
+    """コメント投稿のコールバック（on_click用）"""
+    comment_text = st.session_state.get(comment_key, "").strip()
+    if not comment_text:
+        return
+    comment_df = get_data("Comment").copy()
+    new_row = pd.DataFrame([{
+        "target_type": target_type,
+        "target_idx": int(target_idx),
+        "user": st.session_state.user_name,
+        "comment": comment_text,
+    }])
+    updated_df = pd.concat([comment_df, new_row], ignore_index=True)
+    save_data("Comment", updated_df)
+    # 入力欄をクリア
+    st.session_state[comment_key] = ""
+
+def render_comments(target_type, target_idx, unique_key):
+    """投稿に対するコメント表示＋入力欄を描画"""
+    comment_df = get_data("Comment")
+    # この投稿へのコメントを抽出
+    if not comment_df.empty and 'target_type' in comment_df.columns:
+        post_comments = comment_df[
+            (comment_df['target_type'] == target_type) &
+            (comment_df['target_idx'].astype(int) == int(target_idx))
+        ]
+    else:
+        post_comments = pd.DataFrame()
+
+    comment_count = len(post_comments)
+    with st.expander(f"💬 コメント ({comment_count})", expanded=False):
+        # 既存コメント表示
+        if not post_comments.empty:
+            for _, c_row in post_comments.iterrows():
+                st.markdown(f"**{c_row.get('user', '不明')}**: {c_row.get('comment', '')}")
+        # 入力欄
+        comment_key = f"comment_input_{unique_key}"
+        st.text_input("コメントを入力", key=comment_key, label_visibility="collapsed", placeholder="コメントを入力...")
+        st.button(
+            "💬 送信", key=f"comment_btn_{unique_key}", type="secondary",
+            on_click=_post_comment, args=(target_type, target_idx, comment_key)
+        )
+
 def upload_image_to_gcs(uploaded_file):
     """画像をGCSにアップロードして公開URLを返す"""
     if not USE_GCS or uploaded_file is None:
@@ -893,6 +936,7 @@ with tab_info:
     music_df = get_data("Music")
     memory_df = get_data("Memory")
     message_df = get_data("Message")
+    comment_df = get_data("Comment")
     
     # 統計情報を表示
     col1, col2, col3, col4 = st.columns(4)
@@ -914,7 +958,8 @@ with tab_info:
     
     with col4:
         message_count = len(message_df) if not message_df.empty else 0
-        st.metric("💌 Message", f"{message_count}件", "")
+        comment_count = len(comment_df) if not comment_df.empty else 0
+        st.metric("💌 Message", f"{message_count}件", f"💬 コメント {comment_count}")
     
     st.caption("みんなの投稿で、KOHEIの記憶がより豊かになります ✨")
     
@@ -1186,6 +1231,9 @@ with tab_memory:
                             st.code(file_url_str)
                             st.link_button("📥 ファイルをダウンロード", file_url_str)
                     
+                    # コメント欄
+                    render_comments("Memory", idx, f"memory_{idx}")
+                    
                     st.divider()
         else:
             st.info(f"「{filter_category}」の投稿はまだありません")
@@ -1355,6 +1403,9 @@ with tab_photo:
                         st.button(f"👍 {row.get('likes', 0)}", key=f"like_photo_{idx}", type="secondary",
                                   on_click=_handle_like, args=("Photo", idx, row.get('likes', 0)))
                     
+                    # コメント欄
+                    render_comments("Photo", idx, f"photo_{idx}")
+                    
                     st.divider()
         else:
             st.info("コメント付きの投稿がまだありません。最初の投稿をしてみましょう！")
@@ -1522,6 +1573,9 @@ with tab_music:
                     st.write(f"**エピソード ({len(song_episodes)}件)**")
                     for ep_idx, episode in song_episodes.iterrows():
                         st.markdown(f"**{episode.get('user', '不明')}**: {episode.get('comment', '')}")
+                
+                # コメント欄（曲単位）
+                render_comments("Music", song_episodes.index[0], f"music_{song_name}")
                 
                 st.divider()
     else:
