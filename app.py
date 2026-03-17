@@ -799,7 +799,6 @@ with tab_info:
     
     恒平が愛した、ワイワイとあたたかい雰囲気の中で、気軽にお越しいただけたら嬉しいです。
     
-    **FROM RIEKO AIBA**
     """)
     
     st.divider()
