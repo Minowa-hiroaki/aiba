@@ -785,6 +785,12 @@ tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st
 with tab_info:
     st.header("Event Info")
     
+    # スライドショー
+    st.markdown("### 📸 Photo Slideshow")
+    st.video("https://youtu.be/IL86I9sDrwA")
+    
+    st.divider()
+    
     # 訃報
     st.markdown("""
     ### 💙 Celebration Of Kohei
