@@ -1564,6 +1564,16 @@ with tab_music:
     
     # プレイリスト表示
     st.divider()
+    
+    # Spotify プレイリスト
+    st.write("**🎧 Spotify Playlist**")
+    st.components.v1.iframe(
+        "https://open.spotify.com/embed/playlist/7wd5tqO0cxJklIzG8zWCZf?utm_source=generator&theme=0",
+        height=352,
+    )
+    st.link_button("🎵 Spotifyで開く", "https://open.spotify.com/playlist/7wd5tqO0cxJklIzG8zWCZf", use_container_width=True)
+    
+    st.divider()
     st.write("**🎵 Memorial Playlist**")
     
     if not music_df.empty:
