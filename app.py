@@ -787,7 +787,14 @@ tab_info, tab_event, tab_photo, tab_music, tab_memory, tab_live, tab_message, ta
 with tab_info:
     st.header("Event Info")
     
-    # スライドショー
+    # お別れ会当日のスライドショー
+    st.markdown("### 🎉 お別れ会の様子 - Event Highlights")
+    st.info("2026年3月21日に開催された「Celebrating the Life of Kohei Aiba」当日の写真をまとめたスライドショーです。")
+    st.video("https://youtu.be/eIbF5xdhSok")
+    
+    st.divider()
+    
+    # 思い出のスライドショー
     st.markdown("### 📸 Photo Slideshow")
     st.video("https://youtu.be/IL86I9sDrwA")
     
@@ -1070,125 +1077,248 @@ with tab_info:
     📧 kohei_memorial_project_team@yahoo.co.jp
     """)
 
+def upload_video_to_gcs(uploaded_file, folder="event"):
+    """動画をGCSにアップロードして公開URLを返す"""
+    if not USE_GCS or uploaded_file is None:
+        return None
+    
+    try:
+        file_extension = uploaded_file.name.split('.')[-1].lower()
+        unique_filename = f"{folder}/{uuid.uuid4()}.{file_extension}"
+        
+        content_types = {
+            'mp4': 'video/mp4',
+            'mov': 'video/quicktime',
+            'avi': 'video/x-msvideo',
+        }
+        content_type = content_types.get(file_extension, 'video/mp4')
+        
+        blob = gcs_bucket.blob(unique_filename)
+        blob.upload_from_file(uploaded_file, content_type=content_type)
+        
+        return blob.public_url
+    except Exception as e:
+        st.warning(f"動画アップロード失敗: {str(e)}")
+        return None
+
 # --- 5-1b. Event ---
 with tab_event:
-    st.header("📸 Event Photos - お別れ会の様子")
+    st.header("📸 Event - お別れ会の様子")
     st.markdown("""
     2026年3月21日に開催された **Celebrating the Life of Kohei Aiba** の当日の様子です。  
-    参加された皆さん、写真をぜひ共有してください！
+    参加された皆さん、写真や動画をぜひ共有してください！
     """)
 
     event_df = get_data("Event")
 
-    st.subheader("📤 当日の写真をアップロード")
+    st.subheader("📤 当日の写真・動画をアップロード")
 
-    # 複数ファイル選択対応
-    event_uploaded_files = st.file_uploader(
-        "写真を選択（複数選択可）",
-        type=['jpg', 'png', 'jpeg'],
-        accept_multiple_files=True,
-        key=f"event_uploader_{st.session_state.event_uploader_key}"
+    # アップロードタイプ選択
+    event_upload_type = st.radio(
+        "アップロードするファイルの種類",
+        ["📸 写真", "🎬 動画（挨拶・スピーチなど）"],
+        horizontal=True,
+        key=f"event_upload_type_{st.session_state.event_uploader_key}"
     )
 
-    if event_uploaded_files:
-        if USE_GCS:
-            st.success(f"✅ {len(event_uploaded_files)}枚の画像が選択されました")
-        else:
-            st.info("📌 注意：現在、画像はプレビューのみで保存されません。")
+    if event_upload_type == "📸 写真":
+        # 写真アップロード（複数選択可）
+        event_uploaded_files = st.file_uploader(
+            "写真を選択（複数選択可）",
+            type=['jpg', 'png', 'jpeg'],
+            accept_multiple_files=True,
+            key=f"event_uploader_{st.session_state.event_uploader_key}"
+        )
 
-        st.markdown("**プレビュー：**")
-        preview_cols = st.columns(min(len(event_uploaded_files), 4))
-        for i, uf in enumerate(event_uploaded_files):
-            with preview_cols[i % 4]:
-                try:
-                    from PIL import ImageOps
-                    preview_img = Image.open(uf)
-                    preview_img = ImageOps.exif_transpose(preview_img)
-                    st.image(preview_img, caption=f"写真 {i+1}", use_container_width=True)
-                    uf.seek(0)
-                except:
-                    st.image(uf, caption=f"写真 {i+1}", use_container_width=True)
-                    uf.seek(0)
-
-    event_comment = st.text_input(
-        "コメント（任意）",
-        placeholder="例：乾杯の様子、集合写真など",
-        key=f"event_comment_{st.session_state.event_uploader_key}"
-    )
-
-    st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
-
-    if st.button("写真を投稿する", key="post_event", type="primary"):
         if event_uploaded_files:
-            new_rows = []
-            with st.spinner(f"{len(event_uploaded_files)}枚の画像をアップロード中..."):
-                for i, uf in enumerate(event_uploaded_files):
-                    image_url = ""
-                    if USE_GCS:
-                        image_url = upload_image_to_gcs(uf, folder="event")
-
-                    new_rows.append({
-                        "user": st.session_state.user_name,
-                        "image_url": image_url if image_url else "",
-                        "comment": event_comment if event_comment else "",
-                        "likes": 0
-                    })
-
-            new_df = pd.DataFrame(new_rows)
-            updated_df = pd.concat([event_df, new_df], ignore_index=True)
-
-            st.session_state.event_uploader_key += 1
-
-            if save_data("Event", updated_df):
-                st.success(f"✅ {len(event_uploaded_files)}枚の写真を投稿しました！")
-                st.rerun()
+            if USE_GCS:
+                st.success(f"✅ {len(event_uploaded_files)}枚の画像が選択されました")
             else:
-                st.warning("⚠️ 投稿の保存に失敗しました。Google Sheetsに「Event」ワークシートが存在するか確認してください。")
-                st.info("💡 スプレッドシートに「Event」という名前のシートを作成し、1行目に user, image_url, comment, likes のヘッダーを入力してください。")
-        else:
-            st.error("写真を選択してください")
+                st.info("📌 注意：現在、画像はプレビューのみで保存されません。")
+
+            st.markdown("**プレビュー：**")
+            preview_cols = st.columns(min(len(event_uploaded_files), 4))
+            for i, uf in enumerate(event_uploaded_files):
+                with preview_cols[i % 4]:
+                    try:
+                        from PIL import ImageOps
+                        preview_img = Image.open(uf)
+                        preview_img = ImageOps.exif_transpose(preview_img)
+                        st.image(preview_img, caption=f"写真 {i+1}", use_container_width=True)
+                        uf.seek(0)
+                    except:
+                        st.image(uf, caption=f"写真 {i+1}", use_container_width=True)
+                        uf.seek(0)
+
+        event_comment = st.text_input(
+            "コメント（任意）",
+            placeholder="例：乾杯の様子、集合写真など",
+            key=f"event_comment_{st.session_state.event_uploader_key}"
+        )
+
+        st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
+
+        if st.button("写真を投稿する", key="post_event_photo", type="primary"):
+            if event_uploaded_files:
+                new_rows = []
+                with st.spinner(f"{len(event_uploaded_files)}枚の画像をアップロード中..."):
+                    for i, uf in enumerate(event_uploaded_files):
+                        image_url = ""
+                        if USE_GCS:
+                            image_url = upload_image_to_gcs(uf, folder="event")
+
+                        new_rows.append({
+                            "user": st.session_state.user_name,
+                            "image_url": image_url if image_url else "",
+                            "comment": event_comment if event_comment else "",
+                            "file_type": "photo",
+                            "likes": 0
+                        })
+
+                new_df = pd.DataFrame(new_rows)
+                updated_df = pd.concat([event_df, new_df], ignore_index=True)
+
+                st.session_state.event_uploader_key += 1
+
+                if save_data("Event", updated_df):
+                    st.success(f"✅ {len(event_uploaded_files)}枚の写真を投稿しました！")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ 投稿の保存に失敗しました。")
+            else:
+                st.error("写真を選択してください")
+
+    else:
+        # 動画アップロード
+        event_uploaded_video = st.file_uploader(
+            "動画を選択",
+            type=['mp4', 'mov'],
+            accept_multiple_files=False,
+            key=f"event_video_uploader_{st.session_state.event_uploader_key}"
+        )
+
+        if event_uploaded_video:
+            file_size_mb = event_uploaded_video.size / 1024 / 1024
+            st.info(f"📁 {event_uploaded_video.name} ({file_size_mb:.1f} MB)")
+            if file_size_mb > 200:
+                st.warning("⚠️ 200MBを超えるファイルはアップロードに時間がかかる場合があります。")
+
+        event_video_comment = st.text_input(
+            "コメント（挨拶者の名前など）",
+            placeholder="例：○○さんの挨拶",
+            key=f"event_video_comment_{st.session_state.event_uploader_key}"
+        )
+
+        st.info("📌 注意：動画のアップロードには数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
+
+        if st.button("動画を投稿する", key="post_event_video", type="primary"):
+            if event_uploaded_video:
+                with st.spinner("動画をアップロード中..."):
+                    video_url = ""
+                    if USE_GCS:
+                        video_url = upload_video_to_gcs(event_uploaded_video, folder="event")
+
+                    new_row = pd.DataFrame([{
+                        "user": st.session_state.user_name,
+                        "image_url": video_url if video_url else "",
+                        "comment": event_video_comment if event_video_comment else "",
+                        "file_type": "video",
+                        "likes": 0
+                    }])
+
+                    updated_df = pd.concat([event_df, new_row], ignore_index=True)
+
+                    st.session_state.event_uploader_key += 1
+
+                    if save_data("Event", updated_df):
+                        st.success("✅ 動画を投稿しました！")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ 投稿の保存に失敗しました。")
+            else:
+                st.error("動画を選択してください")
 
     st.divider()
 
-    # 投稿一覧（ギャラリー表示）
-    st.subheader("🖼️ ギャラリー")
-    if not event_df.empty:
-        # 新しい投稿から表示
-        event_df_display = event_df.iloc[::-1].reset_index(drop=False)
-
-        # 3列のグリッド表示
-        cols_per_row = 3
-        for row_start in range(0, len(event_df_display), cols_per_row):
-            cols = st.columns(cols_per_row)
-            for col_idx in range(cols_per_row):
-                df_idx = row_start + col_idx
-                if df_idx < len(event_df_display):
-                    row = event_df_display.iloc[df_idx]
-                    original_idx = row['index']
-                    with cols[col_idx]:
-                        image_url = row.get('image_url', '')
-                        if image_url and str(image_url).strip() != '':
-                            try:
-                                st.image(str(image_url), use_container_width=True)
-                            except:
-                                st.caption("📸 (画像の読み込みに失敗しました)")
-
-                        comment_text = str(row.get('comment', '')).strip()
-                        if comment_text and comment_text != 'None':
-                            st.caption(comment_text)
-
+    # 投稿一覧
+    # 動画セクション
+    if not event_df.empty and 'file_type' in event_df.columns:
+        video_df = event_df[event_df['file_type'] == 'video']
+        if not video_df.empty:
+            st.subheader("🎤 挨拶・スピーチ動画")
+            for idx, row in video_df.iloc[::-1].iterrows():
+                with st.container():
+                    comment_text = str(row.get('comment', '')).strip()
+                    if comment_text and comment_text != 'None':
+                        st.markdown(f"**{comment_text}**")
+                    
+                    file_url = str(row.get('image_url', '')).strip()
+                    if file_url:
+                        try:
+                            st.video(file_url)
+                        except:
+                            st.link_button("▶️ 動画を再生", file_url)
+                    
+                    col_user, col_like = st.columns([5, 1])
+                    with col_user:
                         st.caption(f"by {row.get('user', '不明')}")
+                    with col_like:
                         st.button(
                             f"👍 {row.get('likes', 0)}",
-                            key=f"like_event_{original_idx}",
+                            key=f"like_event_video_{idx}",
                             type="secondary",
                             on_click=_handle_like,
-                            args=("Event", original_idx, row.get('likes', 0))
+                            args=("Event", idx, row.get('likes', 0))
                         )
+                    render_comments("Event", idx, f"event_{idx}")
+                    st.divider()
 
-                        render_comments("Event", original_idx, f"event_{original_idx}")
+    # 写真ギャラリー
+    st.subheader("🖼️ フォトギャラリー")
+    if not event_df.empty:
+        # file_typeがない（既存データ）またはphotoのものを表示
+        if 'file_type' in event_df.columns:
+            photo_event_df = event_df[(event_df['file_type'] != 'video') | (event_df['file_type'].isna())]
+        else:
+            photo_event_df = event_df
+        
+        if not photo_event_df.empty:
+            event_df_display = photo_event_df.iloc[::-1].reset_index(drop=False)
+
+            cols_per_row = 3
+            for row_start in range(0, len(event_df_display), cols_per_row):
+                cols = st.columns(cols_per_row)
+                for col_idx in range(cols_per_row):
+                    df_idx = row_start + col_idx
+                    if df_idx < len(event_df_display):
+                        row = event_df_display.iloc[df_idx]
+                        original_idx = row['index']
+                        with cols[col_idx]:
+                            image_url = row.get('image_url', '')
+                            if image_url and str(image_url).strip() != '':
+                                try:
+                                    st.image(str(image_url), use_container_width=True)
+                                except:
+                                    st.caption("📸 (画像の読み込みに失敗しました)")
+
+                            comment_text = str(row.get('comment', '')).strip()
+                            if comment_text and comment_text != 'None':
+                                st.caption(comment_text)
+
+                            st.caption(f"by {row.get('user', '不明')}")
+                            st.button(
+                                f"👍 {row.get('likes', 0)}",
+                                key=f"like_event_{original_idx}",
+                                type="secondary",
+                                on_click=_handle_like,
+                                args=("Event", original_idx, row.get('likes', 0))
+                            )
+
+                            render_comments("Event", original_idx, f"event_{original_idx}")
+        else:
+            st.info("まだ写真がありません。最初の写真を投稿しましょう！")
     else:
-        st.info("まだ写真がありません。最初の写真を投稿しましょう！")
+        st.info("まだ投稿がありません。最初の写真や動画を投稿しましょう！")
 
 # --- 5-2. Memory ---
 with tab_memory:
