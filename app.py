@@ -143,7 +143,7 @@ def render_comments(target_type, target_idx, unique_key):
             on_click=_post_comment, args=(target_type, target_idx, comment_key)
         )
 
-def upload_image_to_gcs(uploaded_file):
+def upload_image_to_gcs(uploaded_file, folder="photos"):
     """画像をGCSにアップロードして公開URLを返す"""
     if not USE_GCS or uploaded_file is None:
         return None
@@ -182,7 +182,7 @@ def upload_image_to_gcs(uploaded_file):
         img_byte_arr.seek(0)
         
         # ユニークなファイル名を生成
-        unique_filename = f"photos/{uuid.uuid4()}.jpg"
+        unique_filename = f"{folder}/{uuid.uuid4()}.jpg"
         
         # GCSにアップロード
         blob = gcs_bucket.blob(unique_filename)
@@ -609,6 +609,8 @@ if 'music_form_key' not in st.session_state:
     st.session_state.music_form_key = 0
 if 'message_form_key' not in st.session_state:
     st.session_state.message_form_key = 0
+if 'event_uploader_key' not in st.session_state:
+    st.session_state.event_uploader_key = 0
 if 'uploaded_file_url' not in st.session_state:
     st.session_state.uploaded_file_url = {}
 
@@ -779,7 +781,7 @@ else:
     # ウィジェットツリーを安定させるためのプレースホルダー
     components.html("<div></div>", height=0)
 
-tab_info, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st.tabs(["Info", "Photo/Story", "Music", "Memory", "Live", "Message", "Fund"])
+tab_info, tab_event, tab_photo, tab_music, tab_memory, tab_live, tab_message, tab_fund = st.tabs(["Info", "Event", "Photo/Story", "Music", "Memory", "Live", "Message", "Fund"])
 
 # --- 5-1. Info ---
 with tab_info:
@@ -897,6 +899,16 @@ with tab_info:
     col1, col2 = st.columns([4, 1])
     with col1:
         st.markdown("""
+        **📸 Event** - お別れ会当日の写真を共有  
+        当日の様子をみんなで共有しましょう。写真を複数枚まとめてアップロードできます。
+        """)
+    with col2:
+        st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+
+    # Photo/Story タブへのリンク
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        st.markdown("""
         **📸 Photo/Story** - 思い出の写真とエピソードを投稿  
         あなたの思い出を写真や文章で共有してください。写真なしでもOK！
         """)
@@ -971,26 +983,32 @@ with tab_info:
     memory_df = get_data("Memory")
     message_df = get_data("Message")
     comment_df = get_data("Comment")
+    event_df_stat = get_data("Event")
     
     # 統計情報を表示
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
+        event_count = len(event_df_stat) if not event_df_stat.empty else 0
+        event_likes = int(event_df_stat['likes'].fillna(0).sum()) if not event_df_stat.empty and 'likes' in event_df_stat.columns else 0
+        st.metric("📸 Event", f"{event_count}件", f"👍 {event_likes}")
+    
+    with col2:
         photo_count = len(photo_df) if not photo_df.empty else 0
         photo_likes = int(photo_df['likes'].fillna(0).sum()) if not photo_df.empty and 'likes' in photo_df.columns else 0
         st.metric("📸 Photo/Story", f"{photo_count}件", f"👍 {photo_likes}")
     
-    with col2:
+    with col3:
         music_count = len(music_df) if not music_df.empty else 0
         music_likes = int(music_df['likes'].fillna(0).sum()) if not music_df.empty and 'likes' in music_df.columns else 0
         st.metric("🎵 Music", f"{music_count}件", f"👍 {music_likes}")
     
-    with col3:
+    with col4:
         memory_count = len(memory_df) if not memory_df.empty else 0
         memory_likes = int(memory_df['likes'].fillna(0).sum()) if not memory_df.empty and 'likes' in memory_df.columns else 0
         st.metric("🎬 Memory", f"{memory_count}件", f"👍 {memory_likes}")
     
-    with col4:
+    with col5:
         message_count = len(message_df) if not message_df.empty else 0
         comment_count = len(comment_df) if not comment_df.empty else 0
         st.metric("💌 Message", f"{message_count}件", f"💬 コメント {comment_count}")
@@ -1051,6 +1069,126 @@ with tab_info:
     投稿した内容の修正や削除を行いたい場合は、運営サイドまでご連絡ください。  
     📧 kohei_memorial_project_team@yahoo.co.jp
     """)
+
+# --- 5-1b. Event ---
+with tab_event:
+    st.header("📸 Event Photos - お別れ会の様子")
+    st.markdown("""
+    2026年3月21日に開催された **Celebrating the Life of Kohei Aiba** の当日の様子です。  
+    参加された皆さん、写真をぜひ共有してください！
+    """)
+
+    event_df = get_data("Event")
+
+    st.subheader("📤 当日の写真をアップロード")
+
+    # 複数ファイル選択対応
+    event_uploaded_files = st.file_uploader(
+        "写真を選択（複数選択可）",
+        type=['jpg', 'png', 'jpeg'],
+        accept_multiple_files=True,
+        key=f"event_uploader_{st.session_state.event_uploader_key}"
+    )
+
+    if event_uploaded_files:
+        if USE_GCS:
+            st.success(f"✅ {len(event_uploaded_files)}枚の画像が選択されました")
+        else:
+            st.info("📌 注意：現在、画像はプレビューのみで保存されません。")
+
+        st.markdown("**プレビュー：**")
+        preview_cols = st.columns(min(len(event_uploaded_files), 4))
+        for i, uf in enumerate(event_uploaded_files):
+            with preview_cols[i % 4]:
+                try:
+                    from PIL import ImageOps
+                    preview_img = Image.open(uf)
+                    preview_img = ImageOps.exif_transpose(preview_img)
+                    st.image(preview_img, caption=f"写真 {i+1}", use_container_width=True)
+                    uf.seek(0)
+                except:
+                    st.image(uf, caption=f"写真 {i+1}", use_container_width=True)
+                    uf.seek(0)
+
+    event_comment = st.text_input(
+        "コメント（任意）",
+        placeholder="例：乾杯の様子、集合写真など",
+        key=f"event_comment_{st.session_state.event_uploader_key}"
+    )
+
+    st.info("📌 注意：アップロードに、30秒～数分かかる場合があります。ボタンを押した後、そのままお待ちください。")
+
+    if st.button("写真を投稿する", key="post_event", type="primary"):
+        if event_uploaded_files:
+            new_rows = []
+            with st.spinner(f"{len(event_uploaded_files)}枚の画像をアップロード中..."):
+                for i, uf in enumerate(event_uploaded_files):
+                    image_url = ""
+                    if USE_GCS:
+                        image_url = upload_image_to_gcs(uf, folder="event")
+
+                    new_rows.append({
+                        "user": st.session_state.user_name,
+                        "image_url": image_url if image_url else "",
+                        "comment": event_comment if event_comment else "",
+                        "likes": 0
+                    })
+
+            new_df = pd.DataFrame(new_rows)
+            updated_df = pd.concat([event_df, new_df], ignore_index=True)
+
+            st.session_state.event_uploader_key += 1
+
+            if save_data("Event", updated_df):
+                st.success(f"✅ {len(event_uploaded_files)}枚の写真を投稿しました！")
+                st.rerun()
+            else:
+                st.warning("⚠️ 投稿の保存に失敗しました。Google Sheetsに「Event」ワークシートが存在するか確認してください。")
+                st.info("💡 スプレッドシートに「Event」という名前のシートを作成し、1行目に user, image_url, comment, likes のヘッダーを入力してください。")
+        else:
+            st.error("写真を選択してください")
+
+    st.divider()
+
+    # 投稿一覧（ギャラリー表示）
+    st.subheader("🖼️ ギャラリー")
+    if not event_df.empty:
+        # 新しい投稿から表示
+        event_df_display = event_df.iloc[::-1].reset_index(drop=False)
+
+        # 3列のグリッド表示
+        cols_per_row = 3
+        for row_start in range(0, len(event_df_display), cols_per_row):
+            cols = st.columns(cols_per_row)
+            for col_idx in range(cols_per_row):
+                df_idx = row_start + col_idx
+                if df_idx < len(event_df_display):
+                    row = event_df_display.iloc[df_idx]
+                    original_idx = row['index']
+                    with cols[col_idx]:
+                        image_url = row.get('image_url', '')
+                        if image_url and str(image_url).strip() != '':
+                            try:
+                                st.image(str(image_url), use_container_width=True)
+                            except:
+                                st.caption("📸 (画像の読み込みに失敗しました)")
+
+                        comment_text = str(row.get('comment', '')).strip()
+                        if comment_text and comment_text != 'None':
+                            st.caption(comment_text)
+
+                        st.caption(f"by {row.get('user', '不明')}")
+                        st.button(
+                            f"👍 {row.get('likes', 0)}",
+                            key=f"like_event_{original_idx}",
+                            type="secondary",
+                            on_click=_handle_like,
+                            args=("Event", original_idx, row.get('likes', 0))
+                        )
+
+                        render_comments("Event", original_idx, f"event_{original_idx}")
+    else:
+        st.info("まだ写真がありません。最初の写真を投稿しましょう！")
 
 # --- 5-2. Memory ---
 with tab_memory:
